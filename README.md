@@ -29,7 +29,8 @@ Classifiers assessed via accuracy, F1-score, AUROC, and precision at false-posit
 ```
 conda create -n ai-text-detection python=3.12
 conda activate ai-text-detection
-conda install numpy pandas scikit-learn xgboost nltk spacy transformers shap
+
+conda install numpy pandas scikit-learn xgboost nltk spacy transformers shap huggingface_hub datasets==2.20.0 openpyxl tomllib
 ```
 
 ## Usage
@@ -37,6 +38,11 @@ conda install numpy pandas scikit-learn xgboost nltk spacy transformers shap
 2. Run feature extraction: `python extract_features.py --dataset hc3`.
 3. Train/evaluate: `python train.py --model xgboost --features all`.
 4. Analyze: `python analyze_importance.py`.
+
+
+1. Log into Hugging Face and download datasets: `python get_datasets.py`.
+2. Configure dataset_configuration.toml for dataset combination (e.g., enable sources, set total samples, portions), then combine  datasets: `python combine_dataset.py`. 
+3. Configure `configuration.toml` for model settings (e.g., num_samples, enabled features, voting, feature params), then train and evaluate using: `python main.py`.
 
 ## Contributors
 - Finn Fonteijn
