@@ -16,9 +16,10 @@ def main(config_path='configuration.toml'):
     with open(config_path, 'rb') as f_config:
         config = tomllib.load(f_config)
     
-    # Create output file
+    # Create output directory and file
+    os.makedirs('results', exist_ok=True)
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    output_file = f"results_{timestamp}.txt"
+    output_file = f"results/results_{timestamp}.txt"
     f = open(output_file, 'w')
     
     # Define features dictionary

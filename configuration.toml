@@ -3,7 +3,7 @@ Title = "Ai-detector Configuration"
 
 # Number of samples to use from the combined dataset
 # if 0, all samples will be used
-num_samples = 5000
+num_samples = 2000
 
 # Random state for shuffling and splitting
 random_state = 42
@@ -35,6 +35,6 @@ allow_voting = true
 
 [features.bert_classifier.params]
 model_name = "google-bert/bert-base-uncased"
-max_length = 512
-epochs = 3
-lr = 0.001
+max_length = 128
+epochs = 1
+lr = 0.005
