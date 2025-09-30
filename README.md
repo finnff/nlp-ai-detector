@@ -30,7 +30,16 @@ Classifiers assessed via accuracy, F1-score, AUROC, and precision at false-posit
 conda create -n ai-text-detection python=3.12
 conda activate ai-text-detection
 
-conda install numpy pandas scikit-learn xgboost nltk spacy transformers shap huggingface_hub datasets==2.20.0 openpyxl tomllib
+conda install numpy pandas scikit-learn torch transformers
+pip install -r requirements.txt
+
+# then for CUDA 
+pip install torch==2.7.1 torchvision==0.22.1 torchaudio==2.7.1 --index-url https://download.pytorch.org/whl/cu128
+
+# if running on laptop without GPU, use CPU version
+pip install torch==2.7.1 torchvision==0.22.1 torchaudio==2.7.1 --index-url https://download.pytorch.org/whl/cpu
+
+
 ```
 
 ## Usage
