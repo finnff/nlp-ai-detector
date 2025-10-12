@@ -221,3 +221,15 @@ __marimo__/
 .LSOverride
 data/datasets
 results
+
+
+#latex 
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.fls
+*.fdb_latexmk
+*.log
+*.out
+*.synctex.gz
