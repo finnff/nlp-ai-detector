@@ -1,0 +1,121 @@
+\documentclass[11pt]{article}
+
+% Change "review" to "final" to generate the final (sometimes called camera-ready) version.
+% Change to "preprint" to generate a non-anonymous version with page numbers.
+\usepackage[final]{acl}
+\usepackage{times}
+\usepackage{latexsym}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{microtype}
+\usepackage{inconsolata}
+\usepackage{graphicx}
+\usepackage{enumitem}
+
+% skip huge vertical space after title/author
+\setlength\titlebox{8\baselineskip}
+
+
+% Report requireements:
+% ------------------------------- 
+% max 8 pages
+
+% General Note:
+% - Whenever feasible, provide examples of the actual texts (tweets, blogs, sentences, reviews, etc.) that you reference. This will enhance the clarity and tangibility of your report.
+% - If you generated a unique dataset, kindly submit it with your report (unless privacy concerns arise).
+% - While you're welcome to submit any software you developed, note that we won't assess the quality of your programming.
+
+% Assessment criteria:
+% • Problem definition & motivation - clarity of the problem/question and its relevance.
+% • Dataset - appropriateness, description, and transparency about limitations.
+% • Methodology - correct application of NLP methods, clarity of explanation, and proper use of references/tools.
+% • Experiments & results - sound setup, meaningful evaluation, and clear reporting of outcomes.
+% • Discussion & conclusion - critical reflection on findings, limitations, and ethical aspects.
+% • Presentation & writing - overall structure and readability.
+
+
+
+
+% Citation commands for template: 
+% ------------------------------- 
+% \citet{key}      -> Author (year)           [cite in text]
+% \citep{key}      -> (Author, year)          [cite in parentheses]
+% \citealp{key}    -> Author, year            [alternative cite without parentheses]
+% \citeyearpar{key}-> (year)                  [cite year only in parentheses]
+% \citeposs{key}   -> Author's (year)         [possessive citation, ACL only]
+
+
+\title{Hybrid Feature-Based Detection of AI-Generated Text}
+\author{Finn Fonteijn \\
+  \texttt{s2899078} \\
+  \texttt{f.f.fonteijn@student.utwente.nl} \\
+  \\\And
+  Linn Gregussen \\
+  \texttt{s3422372} \\
+  \texttt{l.y.gregussen@student.utwente.nl} \\}
+
+
+\begin{document}
+\maketitle
+\begin{abstract}
+  % Offer a concise overview of your entire report, covering context, objectives, methods, findings, and significance. Aim for 150-250 words.
+\end{abstract}
+
+\section{Introduction}
+\label{sec:introduction}
+% State the specific problems you aimed to address or the questions you sought to answer. If your project was inspired by a particular paper (or papers), which motivated your interest in the problem, kindly reference them here.
+
+For this project, we wish to explore which linguistic or statistical features are most effective for distinguishing human- vs. AI-generated text. The list of features is not fully determined, but some relevant features might be: sentence structure- and complexity, punctuation and formatting, lexical diversity, perplexity and burstiness. Recent surveys indicate that hybrid approaches, combining statistical and neural methods, often outperform single-modality detectors in robustness and generalization \citep{wu-etal-2025-survey, su2024robustdetectionllmgeneratedtext}. Thus, we will evaluate individual features as well as combinations and ensembles to identify optimal hybrid configurations.
+
+\textit{RQ: Which linguistic or statistical features  are most effective in distinguishing human- vs. AI-generated text?}
+
+\section{Related Work}
+\label{sec:related-work}
+% Although not an exhaustive literature review, discuss a few key papers that tackled similar problems. Highlight their data and methods, outcomes, and outline the points of distinction between your approach and theirs.
+
+\section{Data}
+\label{sec:data}
+% Describe the dataset employed in your project. Explain dataset properties, its composition (documents, sentences, words), and labelling information (by whom, how).Indicate the source if it's an existing dataset, or if you created your own, describe the process.
+
+To ensure our model generalizes across diverse English language sources, domains, and LLMs, and to mitigate overfitting to any single dataset's biases, we will utilize multiple datasets for training and evaluation. This approach allows for robust testing of features and hybrids in varied contexts, such as essays, Q\&A, and long-form texts from different LLMs.
+
+\begin{itemize}[noitemsep,nolistsep]
+\item AI Text Detection Pile (Hugging Face): $\sim$1.3M samples, diverse texts (Reddit, Wikipedia, books) \citep{artem9k_ai_text_detection_pile_2023}.
+\item AH\&AITD (Arslan's Human and AI Text Database): $\sim$12k samples, texts across domains (articles, abstracts, stories, news, reviews) \citep{akram2023ahaitd}.
+\item LLM - Detect AI Generated Text Dataset (Kaggle sunilthite): $>$28k essays \citep{thite2023llm}.
+\item LLM - Detect AI Generated Text (Kaggle Competition): $\sim$10k essays \citep{kaggle2023llmdetect}.
+\item DAIGT V2 Train Dataset (Kaggle): 48k samples, essays \citep{deotte2023daigtv2}.
+\item Human ChatGPT Comparison Corpus (HC3): $\sim$24k rows, Q\&A from domains (finance, medicine, law, open) \citep{guo-etal-2023-hc3}.
+\end{itemize}
+
+
+\section{Method}
+\label{sec:method}
+% Clearly describe the method you employed to address your problem. Mention any libraries utilised, and ensure your explanation is accessible to individuals with fundamental NLP knowledge. Reference relevant literature where applicable. Additionally, mention preprocessing steps and dataset division into training and testing sets (if applicable).
+
+First the chosen features will be extracted for each entry in the datasets. Examples would be using a language model to calculate perplexity, a tokenizer to calculate lexical diversity or a POS tagger to calculate POS tag ratios. Then, a (lightweight) classifier will be trained on these features; so far logistic regression and XGBoost are candidates. To assess individual and combined efficacy, we will test features separately and explore ensembles (e.g., stacking or voting across feature subsets or classifiers). Lastly, the feature importances will be analyzed.
+
+\subsection{Evaluation}
+\label{sec:evaluation}
+The classifier(s) will be evaluated using accuracy, F1-score and AUROC. In addition, precision at different false-positive rates may be reported to mimic realistic screening use. 
+
+Depending on the classifier, feature importance will be evaluated using coefficients (for logistic regression), SHAP values \citep{shap_library} and/or permutation importance. Hybrid combinations will be benchmarked against baselines to quantify improvements in performance and robustness.
+
+\section{Experiment and Results}
+\label{sec:experiment-results}
+% Describe your experiment setup, evaluation process and report your project's outcomes, such as classification accuracy or any pertinent evaluation metrics. Include any noteworthy findings that arose from your analysis.
+
+\section{Discussion and Conclusion}
+\label{sec:discussion-conclusion}
+% Concisely assess your project, addressing errors and their potential causes. Discuss method limitations, dataset issues, and consider alternative approaches. Briefly explore ethical implications and societal impact of deploying your NLP solutions, suggesting ways to address ethical concerns. Summarise your conclusions.
+
+
+
+\bibliography{references}
+
+\appendix
+\label{sec:appendix}
+
+\section{Example appendix}
+
+\end{document}
