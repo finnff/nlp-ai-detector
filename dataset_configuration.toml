@@ -12,6 +12,9 @@ use_arrow = false
 # if true, uses a random seed for sampling and shuffling, otherwise uses fixed seed 0
 random = false
 
+# if true, balances each source to have equal numbers of human (0) and AI (1) generated texts (does not handle case where this limits the numbe of samples contributed by a source for now, so one mmight end up with less than total_samples in the combined dataset)
+balance_classes = false
+
 # if relaive_portion is not set, it defaults to equal distribution among enabled sources (16.67% each for 6 sources)
 # set relative portion to "0.2" for 20% of the total samples from that source
 # if using relative portion, ensure the sum of all relative portions equals 1.0

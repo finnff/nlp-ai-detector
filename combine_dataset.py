@@ -110,6 +110,7 @@ print(f"Title: {config['Title']}")
 print(f"Total samples: \033[94m{config['total_samples']}\033[0m")
 print(f"Use arrow: {config['use_arrow']}")
 print(f"Random: {config.get('random', False)}")
+print(f"Balance classes: {config.get('balance_classes')}")
 
 # Handle total_samples
 if config['total_samples'] == 'MAX':
@@ -120,7 +121,8 @@ if config['total_samples'] == 'MAX':
         sampled_dfs.append(df)
 else:
     total_samples = config['total_samples']
-    sampled_dfs = []
+    balance_classes = config.get('balance_classes')
+    sampled_dfs = []    
     for i, key in enumerate(enabled_sources):
         portion = portions[key]
         target_n = math.floor(total_samples * portion)
@@ -130,8 +132,22 @@ else:
             remainder = total_samples % len(enabled_sources)
             target_n = base_n + (1 if i < remainder else 0)
         df = source_dfs[key]
-        n = min(target_n, len(df))
-        sampled = df.sample(n=n, random_state=RANDOM_STATE, replace=False)
+        
+        if balance_classes:
+            human_df = df[df['generated'] == 0]
+            ai_df = df[df['generated'] == 1]
+            # limited by the smallest class per source
+            max_balanced = 2 * min(len(human_df), len(ai_df))
+            target_n = min(target_n, max_balanced)
+            n_per_class = target_n // 2
+            sampled = pd.concat([
+                human_df.sample(n=n_per_class, random_state=RANDOM_STATE, replace=False),
+                ai_df.sample(n=n_per_class, random_state=RANDOM_STATE, replace=False)
+            ], ignore_index=True)
+        else:
+            n = min(target_n, len(df))
+            sampled = df.sample(n=n, random_state=RANDOM_STATE, replace=False)
+        
         sampled['origin_source'] = key
         sampled_dfs.append(sampled)
 
@@ -156,12 +172,16 @@ else:
 
 # Print sources with details
 print("\nSources:")
+total_contrib = len(df)
 for key in enabled_sources:
-    count = len(source_dfs[key])
-    perc = portions[key] * 100
+    df_source = source_dfs[key]
+    count = len(df_source)
+    human_count = len(df_source[df_source['generated'] == 0])
+    ai_count = len(df_source[df_source['generated'] == 1])
     contrib = contributions[key]
     perc_of_source = (contrib / count) * 100
-    print(f"\033[92m[ENABLED]\033[0m {key:<25}: {count:>7} lines ({perc:>5.2f}%) = \033[93m{contrib:>4}\033[0m ({perc_of_source:>6.2f}% of source dataset)")
+    perc_of_combined = (contrib / total_contrib) * 100
+    print(f"\033[92m[ENABLED]\033[0m {key:<25}: {count:>7} total (H:{human_count:>6}, AI:{ai_count:>6}) → \033[93m{contrib:>5}\033[0m samples ({perc_of_source:>5.2f}% of source, {perc_of_combined:>5.2f}% of combined)")
 
 # Print required
 print("Combined Dataset Head: \n")
