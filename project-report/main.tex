@@ -11,7 +11,7 @@
 \usepackage{inconsolata}
 \usepackage{graphicx}
 \usepackage{enumitem}
-
+\usepackage{booktabs}
 % skip huge vertical space after title/author
 \setlength\titlebox{8\baselineskip}
 
@@ -88,6 +88,35 @@ To ensure our model generalizes across diverse English language sources, domains
 \item Human ChatGPT Comparison Corpus (HC3): $\sim$24k rows, Q\&A from domains (finance, medicine, law, open) \citep{guo-etal-2023-hc3}.
 \end{itemize}
 
+\subsection{Dataset Balancing}
+\label{sec:dataset-balancing}
+The datsets showe varying degrees of class imbalance between the target classes human-written (0) and AI-generated (1). With the extremes being the LLM Detect Competition being 99.8\% human-written, while AH\&AITD is perfectly balanced. The dataset's class distribution is shown in Table \ref{tab:dataset-class-distribution}.
+
+% TODO update/finish after discussion of approach
+The dataset was balanced using a per-source strategy, where each source contributes 50\% human and 50\% AI-generated samples according to its configured proportion of the total dataset size.
+
+
+
+
+\begin{table}[t]
+\centering
+\scriptsize
+\begin{tabular}{lrcc}
+\toprule
+\textbf{Dataset} & \textbf{Samples} & \textbf{Human (\%)} & \textbf{AI (\%)} \\
+\midrule
+AI Text Detection Pile & 1.39M & 73.8 & 26.2 \\
+HC3 & 85K & 68.5 & 31.5 \\
+sunilthite & 29K & 60.1 & 39.9 \\
+DAIGT V2 & 45K & 61.0 & 39.0 \\
+LLM Detect Competition & 1.4K & 99.8 & 0.2 \\
+AH\&AITD & 12K & 50.0 & 50.0 \\
+\bottomrule
+\end{tabular}
+\caption{Dataset size and class distributions}
+\label{tab:dataset-class-distribution}
+\end{table}  
+
 
 \section{Method}
 \label{sec:method}
@@ -110,7 +139,7 @@ Depending on the classifier, feature importance will be evaluated using coeffici
 % Concisely assess your project, addressing errors and their potential causes. Discuss method limitations, dataset issues, and consider alternative approaches. Briefly explore ethical implications and societal impact of deploying your NLP solutions, suggesting ways to address ethical concerns. Summarise your conclusions.
 
 
-
+\bibliographystyle{acl_natbib}
 \bibliography{references}
 
 \appendix
