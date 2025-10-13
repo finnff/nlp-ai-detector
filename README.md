@@ -55,11 +55,9 @@ pip install torch==2.7.1 torchvision==0.22.1 torchaudio==2.7.1 --index-url https
 
 ## BERT Model Training and Loading
 
-The BERT classifier supports saving and loading trained models, allowing you to train once on a powerful machine and deploy on less powerful devices.
-
 ### Training and Saving a Model
 
-To train a BERT model and save it automatically, ensure these settings in `configuration.toml`:
+To train a BERT model (requires CUDA to train efficiently) and save it automatically, ensure these settings in `configuration.toml`:
 
 ```toml
 [features.bert_classifier]
@@ -73,7 +71,7 @@ Run training:
 python main.py
 ```
 
-The trained model will be saved to `models/bert_classifier.pt`.
+The trained model will then be saved to `models/bert_classifier.pt`.
 
 ### Loading a Pre-trained Model
 
@@ -90,7 +88,7 @@ Run inference:
 python main.py
 ```
 
-### Sharing Models with Teammates
+### Using Pre-trained Models with Git LFS
 
 Model files are automatically tracked using Git LFS (Large File Storage). To share models:
 
@@ -99,26 +97,27 @@ Model files are automatically tracked using Git LFS (Large File Storage). To sha
    git lfs install
    ```
 
-2. **Push a trained model**:
+2. **Migrate existing models to LFS** (one-time, if you had models before LFS was set up):
+   ```bash
+   git add models/*.pt
+   git commit -m "Migrate model files to Git LFS"
+   ```
+   Note: When you add `.gitattributes` to track `.pt` files with LFS, Git will convert existing model files from regular Git storage to LFS pointers. This is a one-time migration and will show the files as modified.
+
+3. **Push a trained model**:
    ```bash
    git add models/bert_classifier.pt
    git commit -m "Add trained BERT model"
    git push
    ```
 
-3. **Pull a model from the repository**:
+4. **Pull a model from the repository**:
    ```bash
    git lfs pull
    ```
 
 Model files (*.pt, *.pth) are automatically managed by Git LFS, so teammates can easily access pre-trained models without re-training.
 
-### Model Naming Convention
-
-You can save multiple model versions by changing the `model_path` in configuration:
-- `models/bert_classifier.pt` - Default model
-- `models/bert_classifier_v2.pt` - Alternative version
-- `models/bert_large.pt` - Different architecture
 
 ## Contributors
 - Finn Fonteijn

@@ -33,9 +33,9 @@ allow_voting = false
 enabled = true
 allow_voting = true
 # Set to true to load a pretrained model instead of training from scratch
-use_pretrained = false
+use_pretrained = true
 # Path to the saved model file (used when use_pretrained = true)
-model_path = "models/bert_classifier.pt"
+model_path = "models/bert_classifier_172402.pt"
 # Set to true to automatically save the model after training
 save_after_training = true
 
