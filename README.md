@@ -50,8 +50,75 @@ pip install torch==2.7.1 torchvision==0.22.1 torchaudio==2.7.1 --index-url https
 
 
 1. Log into Hugging Face and download datasets: `python get_datasets.py`.
-2. Configure dataset_configuration.toml for dataset combination (e.g., enable sources, set total samples, portions), then combine  datasets: `python combine_dataset.py`. 
+2. Configure dataset_configuration.toml for dataset combination (e.g., enable sources, set total samples, portions), then combine  datasets: `python combine_dataset.py`.
 3. Configure `configuration.toml` for model settings (e.g., num_samples, enabled features, voting, feature params), then train and evaluate using: `python main.py`.
+
+## BERT Model Training and Loading
+
+The BERT classifier supports saving and loading trained models, allowing you to train once on a powerful machine and deploy on less powerful devices.
+
+### Training and Saving a Model
+
+To train a BERT model and save it automatically, ensure these settings in `configuration.toml`:
+
+```toml
+[features.bert_classifier]
+use_pretrained = false      # Train from scratch
+save_after_training = true  # Save after training
+model_path = "models/bert_classifier.pt"
+```
+
+Run training:
+```bash
+python main.py
+```
+
+The trained model will be saved to `models/bert_classifier.pt`.
+
+### Loading a Pre-trained Model
+
+To load a previously trained model instead of training from scratch:
+
+```toml
+[features.bert_classifier]
+use_pretrained = true       # Load existing model
+model_path = "models/bert_classifier.pt"
+```
+
+Run inference:
+```bash
+python main.py
+```
+
+### Sharing Models with Teammates
+
+Model files are automatically tracked using Git LFS (Large File Storage). To share models:
+
+1. **First-time setup** (already done for this repo):
+   ```bash
+   git lfs install
+   ```
+
+2. **Push a trained model**:
+   ```bash
+   git add models/bert_classifier.pt
+   git commit -m "Add trained BERT model"
+   git push
+   ```
+
+3. **Pull a model from the repository**:
+   ```bash
+   git lfs pull
+   ```
+
+Model files (*.pt, *.pth) are automatically managed by Git LFS, so teammates can easily access pre-trained models without re-training.
+
+### Model Naming Convention
+
+You can save multiple model versions by changing the `model_path` in configuration:
+- `models/bert_classifier.pt` - Default model
+- `models/bert_classifier_v2.pt` - Alternative version
+- `models/bert_large.pt` - Different architecture
 
 ## Contributors
 - Finn Fonteijn

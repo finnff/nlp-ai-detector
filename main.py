@@ -122,24 +122,63 @@ def main(config_path='configuration.toml'):
             msg = f"\n{info['name']}:"
             print(msg)
             print(msg, file=f)
-            
+
             params = config['features'][feat].get('params', {})
-            clf = info['class'](**params)
-            
-            if hasattr(clf, 'fit'):
-                clf.fit(X_train, y_train)
-                msg = "Model trained"
-                print(msg)
-                print(msg, file=f)
-            
+
+            # Special handling for BERT classifier with pretrained model option
+            if feat == 'bert_classifier':
+                use_pretrained = config['features'][feat].get('use_pretrained', False)
+                model_path = config['features'][feat].get('model_path', 'models/bert_classifier.pt')
+                save_after_training = config['features'][feat].get('save_after_training', False)
+
+                if use_pretrained:
+                    # Load pretrained model
+                    try:
+                        clf = info['class'].from_pretrained(
+                            model_path,
+                            model_name=params.get('model_name', 'google-bert/bert-base-uncased'),
+                            lr=params.get('lr', 1e-3)
+                        )
+                        msg = f"Loaded pretrained model from {model_path}"
+                        print(msg)
+                        print(msg, file=f)
+                    except FileNotFoundError:
+                        msg = f"Error: Pretrained model not found at {model_path}. Please train a model first or set use_pretrained = false."
+                        print(msg)
+                        print(msg, file=f)
+                        continue
+                else:
+                    # Train new model
+                    clf = info['class'](**params)
+                    clf.fit(X_train, y_train)
+                    msg = "Model trained"
+                    print(msg)
+                    print(msg, file=f)
+
+                    # Save model if requested
+                    if save_after_training:
+                        clf.save_model(model_path)
+                        msg = f"Model saved to {model_path}"
+                        print(msg)
+                        print(msg, file=f)
+            else:
+                # Regular handling for other classifiers
+                clf = info['class'](**params)
+
+                if hasattr(clf, 'fit'):
+                    clf.fit(X_train, y_train)
+                    msg = "Model trained"
+                    print(msg)
+                    print(msg, file=f)
+
             y_pred_feat = clf.predict(X_test)
             predictions[feat] = y_pred_feat
             accuracy_feat, report_feat = clf.evaluate(y_test, y_pred_feat)
-            
+
             msg = f"Accuracy: {accuracy_feat:.4f}"
             print(msg)
             print(msg, file=f)
-            
+
             msg = "\nClassification Report:"
             print(msg)
             print(msg, file=f)
