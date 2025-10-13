@@ -50,8 +50,74 @@ pip install torch==2.7.1 torchvision==0.22.1 torchaudio==2.7.1 --index-url https
 
 
 1. Log into Hugging Face and download datasets: `python get_datasets.py`.
-2. Configure dataset_configuration.toml for dataset combination (e.g., enable sources, set total samples, portions), then combine  datasets: `python combine_dataset.py`. 
+2. Configure dataset_configuration.toml for dataset combination (e.g., enable sources, set total samples, portions), then combine  datasets: `python combine_dataset.py`.
 3. Configure `configuration.toml` for model settings (e.g., num_samples, enabled features, voting, feature params), then train and evaluate using: `python main.py`.
+
+## BERT Model Training and Loading
+
+### Training and Saving a Model
+
+To train a BERT model (requires CUDA to train efficiently) and save it automatically, ensure these settings in `configuration.toml`:
+
+```toml
+[features.bert_classifier]
+use_pretrained = false      # Train from scratch
+save_after_training = true  # Save after training
+model_path = "models/bert_classifier.pt"
+```
+
+Run training:
+```bash
+python main.py
+```
+
+The trained model will then be saved to `models/bert_classifier.pt`.
+
+### Loading a Pre-trained Model
+
+To load a previously trained model instead of training from scratch:
+
+```toml
+[features.bert_classifier]
+use_pretrained = true       # Load existing model
+model_path = "models/bert_classifier.pt"
+```
+
+Run inference:
+```bash
+python main.py
+```
+
+### Using Pre-trained Models with Git LFS
+
+Model files are automatically tracked using Git LFS (Large File Storage). To share models:
+
+1. **First-time setup** (already done for this repo):
+   ```bash
+   git lfs install
+   ```
+
+2. **Migrate existing models to LFS** (one-time, if you had models before LFS was set up):
+   ```bash
+   git add models/*.pt
+   git commit -m "Migrate model files to Git LFS"
+   ```
+   Note: When you add `.gitattributes` to track `.pt` files with LFS, Git will convert existing model files from regular Git storage to LFS pointers. This is a one-time migration and will show the files as modified.
+
+3. **Push a trained model**:
+   ```bash
+   git add models/bert_classifier.pt
+   git commit -m "Add trained BERT model"
+   git push
+   ```
+
+4. **Pull a model from the repository**:
+   ```bash
+   git lfs pull
+   ```
+
+Model files (*.pt, *.pth) are automatically managed by Git LFS, so teammates can easily access pre-trained models without re-training.
+
 
 ## Contributors
 - Finn Fonteijn
