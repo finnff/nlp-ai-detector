@@ -32,6 +32,12 @@ allow_voting = false
 [features.bert_classifier]
 enabled = true
 allow_voting = true
+# Set to true to load a pretrained model instead of training from scratch
+use_pretrained = true
+# Path to the saved model file (used when use_pretrained = true)
+model_path = "models/bert_classifier_172402.pt"
+# Set to true to automatically save the model after training
+save_after_training = true
 
 [features.bert_classifier.params]
 model_name = "google-bert/bert-base-uncased"
