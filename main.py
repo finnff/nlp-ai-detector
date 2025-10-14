@@ -45,21 +45,27 @@ def main(config_path='configuration.toml'):
         f.close()
         exit(1)
 
-    if arrow_exists and csv_exists:
+    current_time = datetime.datetime.now().timestamp()
+    if arrow_exists:
         arrow_mtime = os.path.getmtime(arrow_path)
+        arrow_age = (current_time - arrow_mtime) / 60
+    if csv_exists:
         csv_mtime = os.path.getmtime(csv_path)
+        csv_age = (current_time - csv_mtime) / 60
+
+    if arrow_exists and csv_exists:
         if arrow_mtime > csv_mtime:
             use_arrow = True
-            reason = f"Arrow is newer ({arrow_mtime} > {csv_mtime})"
+            reason = f"Arrow is Newer ({arrow_age:.0f} mins old vs {csv_age:.0f} mins old)"
         else:
             use_arrow = False
-            reason = f"CSV is newer ({csv_mtime} > {arrow_mtime})"
+            reason = f"CSV is Newer ({csv_age:.0f} mins old vs {arrow_age:.0f} mins old)"
     elif arrow_exists:
         use_arrow = True
-        reason = "Only Arrow version exists"
+        reason = f"Only Arrow version exists ({arrow_age:.0f} mins old)"
     else:
         use_arrow = False
-        reason = "Only CSV version exists"
+        reason = f"Only CSV version exists ({csv_age:.0f} mins old)"
 
     msg = f"Using {'Arrow' if use_arrow else 'CSV'} version: {reason}"
     print(msg)

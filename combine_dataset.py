@@ -2,9 +2,13 @@ import os
 import pandas as pd
 import tomllib
 import math
+import datasets
 from datasets import load_from_disk, Dataset
 import numpy as np  # For potential use, though not strictly needed here
 import argparse
+
+# Disable caching to force reload datasets
+datasets.disable_caching()
 
 # Parse command line arguments
 parser = argparse.ArgumentParser()
@@ -34,12 +38,12 @@ ah_aitd_path = os.path.join(datasets_dir, 'ah_aitd', 'AHAIRD_Dataset.xlsx')
 
 # Map source names to loaders
 source_loaders = {
-    'ai_text_detection_pile': lambda: (load_from_disk(pile_path)['train'].to_pandas() if 'train' in load_from_disk(pile_path) else load_from_disk(pile_path).to_pandas()),
-    'hc3': lambda: (load_from_disk(hc3_path)['train'].to_pandas() if 'train' in load_from_disk(hc3_path) else load_from_disk(hc3_path).to_pandas()),
-    'sunilthite': lambda: pd.read_csv(sunilthite_path),
+    'ai_text_detection_pile': lambda: (load_from_disk(pile_path, keep_in_memory=True)['train'].to_pandas() if 'train' in load_from_disk(pile_path, keep_in_memory=True) else load_from_disk(pile_path, keep_in_memory=True).to_pandas()),
+    'hc3': lambda: (load_from_disk(hc3_path, keep_in_memory=True)['train'].to_pandas() if 'train' in load_from_disk(hc3_path, keep_in_memory=True) else load_from_disk(hc3_path, keep_in_memory=True).to_pandas()),
     'daigt_v2': lambda: pd.read_csv(daigt_v2_path),
-    'llm_detect_competition': lambda: pd.read_csv(kaggle_comp_path),
+    'sunilthite': lambda: pd.read_csv(sunilthite_path),
     'ah_aitd': lambda: pd.read_excel(ah_aitd_path),
+    'llm_detect_competition': lambda: pd.read_csv(kaggle_comp_path),
 }
 
 # Get enabled sources

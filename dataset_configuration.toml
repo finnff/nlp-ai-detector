@@ -4,13 +4,13 @@ Title = "Combined Dataset Maker"
 
 # Total number of samples to include in the combined dataset
 # if set to MAX, it uses all available samples from enabled sources
-total_samples = 5000
+total_samples = 10000
 
 # if true, saves the combined dataset in Apache Arrow format for efficiency, otherwise saves as csv
 use_arrow = false
 
 # if true, uses a random seed for sampling and shuffling, otherwise uses fixed seed 0
-random = false
+random = true
 
 # if true, balances each source to have equal numbers of human (0) and AI (1) generated texts (does not handle case where this limits the numbe of samples contributed by a source for now, so one mmight end up with less than total_samples in the combined dataset)
 balance_classes = false
@@ -20,23 +20,12 @@ balance_classes = false
 # if using relative portion, ensure the sum of all relative portions equals 1.0
 
 
-[ah_aitd]
-
-enabled = true
-relative_portion = 0
-
 [ai_text_detection_pile]
-
 enabled = true
 relative_portion = 0
 
-[daigt_v2]
-
-enabled = true
-relative_portion = 0
 
 [hc3]
-
 sources_to_include = [
     'reddit_eli5',
     'open_qa',
@@ -47,12 +36,21 @@ sources_to_include = [
 enabled = true
 relative_portion = 0
 
-[llm_detect_competition]
 
+[daigt_v2]
 enabled = true
 relative_portion = 0
 
-[sunilthite]
 
+[sunilthite]
+enabled = true
+relative_portion = 0
+
+
+[ah_aitd]
+enabled = true
+relative_portion = 0
+
+[llm_detect_competition]
 enabled = true
 relative_portion = 0
