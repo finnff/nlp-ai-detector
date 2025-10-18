@@ -42,5 +42,6 @@ save_after_training = true
 [features.bert_classifier.params]
 model_name = "google-bert/bert-base-uncased"
 max_length = 128
-epochs = 1
+epochs = 3
 lr = 0.005
+batch_size = 64
