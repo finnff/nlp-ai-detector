@@ -8,6 +8,7 @@ from features.nb_classifier import NBClassifier
 from features.random_choice import RandomClassifier
 from features.nb_no_stopwords import NBClassifierNoStopwords
 from features.bert_classifier import BERTClassifier
+from ensemble import Ensemble
 import argparse
 import datetime
 
@@ -126,6 +127,7 @@ def main(config_path='configuration.toml'):
             print(msg, file=f)
 
     predictions = {}
+    trained_clfs = {}
 
     for feat, info in features.items():
         if config['features'][feat]['enabled']:
@@ -190,6 +192,7 @@ def main(config_path='configuration.toml'):
                         # Predict on test set for voting using last clf
                         y_pred_feat = clf.predict(X_test)
                         predictions[feat] = y_pred_feat
+                        trained_clfs[feat] = clf
                         # Do not save model in CV mode
                     else:
                         # Train new model
@@ -222,6 +225,7 @@ def main(config_path='configuration.toml'):
                     y_pred_feat = clf.predict(X_test)
                     predictions[feat] = y_pred_feat
                     accuracy_feat, report_feat = clf.evaluate(y_test, y_pred_feat)
+                trained_clfs[feat] = clf
 
             msg = f"Accuracy: {accuracy_feat:.4f}"
             print(msg)
@@ -234,28 +238,21 @@ def main(config_path='configuration.toml'):
             print(report_feat, file=f)
 
     # Ensemble
-    voters = [feat for feat in predictions if config['features'][feat]['allow_voting']]
+    voters = [feat for feat in trained_clfs if config['features'][feat]['allow_voting']]
     if len(voters) > 1:
+        ensemble = Ensemble({feat: trained_clfs[feat] for feat in voters}, method='voting')
+        ensemble.fit(X_train, y_train)
+        y_pred_ensemble = ensemble.predict(X_test)
+        accuracy_ensemble, report_ensemble = ensemble.evaluate(y_test, y_pred_ensemble)
+
         msg = "\nEnsemble (Majority Vote):"
         print(msg)
         print(msg, file=f)
-        
-        y_pred_ensemble = []
-        for i in range(len(y_test)):
-            votes = [predictions[feat][i] for feat in voters]
-            majority = max(set(votes), key=votes.count)
-            y_pred_ensemble.append(majority)
 
-        accuracy_ensemble = accuracy_score(y_test, y_pred_ensemble)
-        report_ensemble = classification_report(
-            y_test, y_pred_ensemble, 
-            target_names=['Human Written', 'AI Generated']
-        )
-        
         msg = f"Accuracy: {accuracy_ensemble:.4f}"
         print(msg)
         print(msg, file=f)
-        
+
         msg = "\nClassification Report:"
         print(msg)
         print(msg, file=f)
