@@ -240,24 +240,32 @@ def main(config_path='configuration.toml'):
     # Ensemble
     voters = [feat for feat in trained_clfs if config['features'][feat]['allow_voting']]
     if len(voters) > 1:
-        ensemble = Ensemble({feat: trained_clfs[feat] for feat in voters}, method='voting')
-        ensemble.fit(X_train, y_train)
-        y_pred_ensemble = ensemble.predict(X_test)
-        accuracy_ensemble, report_ensemble = ensemble.evaluate(y_test, y_pred_ensemble)
+        methods = config.get('ensemble', {}).get('method', ['voting'])
+        if isinstance(methods, str):
+            methods = [methods]
+        stacking_estimator = config.get('ensemble', {}).get('stacking_estimator', 'LogisticRegression')
+        for method in methods:
+            ensemble = Ensemble({feat: trained_clfs[feat] for feat in voters}, method=method, stacking_estimator=stacking_estimator)
+            ensemble.fit(X_train, y_train)
+            y_pred_ensemble = ensemble.predict(X_test)
+            accuracy_ensemble, report_ensemble = ensemble.evaluate(y_test, y_pred_ensemble)
 
-        msg = "\nEnsemble (Majority Vote):"
-        print(msg)
-        print(msg, file=f)
+            if method == 'stacking':
+                msg = f"\nEnsemble ({method.capitalize()} with {stacking_estimator}):"
+            else:
+                msg = f"\nEnsemble ({method.capitalize()}):"
+            print(msg)
+            print(msg, file=f)
 
-        msg = f"Accuracy: {accuracy_ensemble:.4f}"
-        print(msg)
-        print(msg, file=f)
+            msg = f"Accuracy: {accuracy_ensemble:.4f}"
+            print(msg)
+            print(msg, file=f)
 
-        msg = "\nClassification Report:"
-        print(msg)
-        print(msg, file=f)
-        print(report_ensemble)
-        print(report_ensemble, file=f)
+            msg = "\nClassification Report:"
+            print(msg)
+            print(msg, file=f)
+            print(report_ensemble)
+            print(report_ensemble, file=f)
 
     f.close()
     print(f"\nResults saved to {output_file}")

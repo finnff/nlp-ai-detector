@@ -1,22 +1,43 @@
+from sklearn.ensemble import StackingClassifier, RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, classification_report
 
 class Ensemble:
-    def __init__(self, classifiers, method='voting'):
+    def __init__(self, classifiers, method='voting', stacking_estimator='LogisticRegression'):
         """
         Ensemble class for combining multiple classifiers.
 
         Args:
             classifiers: Dict of {name: trained_classifier}
-            method: 'voting' for majority vote
+            method: 'voting' for majority vote, 'stacking' for meta-classifier
+            stacking_estimator: Meta-classifier for stacking ('LogisticRegression', 'RandomForest', 'XGBoost')
         """
         self.classifiers = classifiers
         self.method = method
+        self.stacking_estimator = stacking_estimator
 
     def fit(self, X, y):
         """
-        Fit the ensemble (placeholder for future stacking).
+        Fit the ensemble.
         """
-        pass
+        if self.method == 'stacking':
+            estimators = [(name, clf) for name, clf in self.classifiers.items()]
+            estimator_map = {
+                "LogisticRegression": lambda: LogisticRegression(),
+                "RandomForest": lambda: RandomForestClassifier(),
+                "XGBoost": lambda: __import__('xgboost').XGBClassifier()
+            }
+            stacking_estimator = getattr(self, 'stacking_estimator', 'LogisticRegression')
+            try:
+                final_estimator = estimator_map[stacking_estimator]()
+            except KeyError:
+                print(f"Warning: Unknown stacking_estimator '{stacking_estimator}', using LogisticRegression")
+                final_estimator = LogisticRegression()
+            except ImportError:
+                print(f"Warning: {stacking_estimator} not available, using LogisticRegression")
+                final_estimator = LogisticRegression()
+            self.ensemble = StackingClassifier(estimators=estimators, final_estimator=final_estimator)
+            self.ensemble.fit(X, y)
 
     def predict(self, X):
         """
@@ -31,6 +52,8 @@ class Ensemble:
                 majority = max(set(votes), key=votes.count)
                 y_pred.append(majority)
             return y_pred
+        elif self.method == 'stacking':
+            return self.ensemble.predict(X)
         else:
             raise ValueError(f"Unknown method: {self.method}")
 

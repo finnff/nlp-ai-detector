@@ -1,7 +1,9 @@
 import torch
 import torch.nn as nn
+import numpy as np
 from torch.utils.data import DataLoader, Dataset
 from transformers import AutoTokenizer, AutoModel
+from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.metrics import accuracy_score, classification_report
 from tqdm import tqdm
 import os
@@ -33,19 +35,36 @@ class TextDataset(Dataset):
             return self.texts[idx], self.labels[idx]
         return self.texts[idx]
 
-class BERTClassifier:
+class BERTClassifier(BaseEstimator, ClassifierMixin):
     def __init__(self, model_name='google-bert/bert-base-uncased', max_length=512, epochs=3, lr=1e-3, batch_size=16):
+        self.model_name = model_name
+        self.max_length = max_length
+        self.epochs = epochs
+        self.lr = lr
+        self.batch_size = batch_size
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         self.model = AutoModel.from_pretrained(model_name)
         self.classifier = nn.Linear(768, 2)  # BERT base has 768 hidden size
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.model.to(self.device)
         self.classifier.to(self.device)
-        self.max_length = max_length
-        self.epochs = epochs
-        self.batch_size = batch_size
         self.optimizer = torch.optim.Adam(self.classifier.parameters(), lr=lr)
         self.criterion = nn.CrossEntropyLoss()
+
+    def get_params(self, deep=True):
+        return {
+            'model_name': self.model_name,
+            'max_length': self.max_length,
+            'epochs': self.epochs,
+            'lr': self.lr,
+            'batch_size': self.batch_size
+        }
+
+    def set_params(self, **params):
+        for key, value in params.items():
+            setattr(self, key, value)
+        # Reinitialize if needed, but for simplicity, assume params set before fit
+        return self
 
     def collate_fn(self, batch):
         if isinstance(batch[0], tuple):  # Training: (text, label)
@@ -84,6 +103,7 @@ class BERTClassifier:
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
+        self.classes_ = np.array([0, 1])
 
     def predict(self, X_test):
         self.model.eval()
@@ -99,6 +119,21 @@ class BERTClassifier:
                 batch_preds = torch.argmax(logits, dim=1).tolist()
                 preds.extend(batch_preds)
         return preds
+
+    def predict_proba(self, X_test):
+        self.model.eval()
+        self.classifier.eval()
+        dataset = TextDataset(X_test)
+        dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=False, collate_fn=self.collate_fn)
+        probs = []
+        with torch.no_grad():
+            for inputs in dataloader:
+                outputs = self.model(**inputs)
+                cls_emb = outputs.last_hidden_state[:, 0, :]
+                logits = self.classifier(cls_emb)
+                batch_probs = torch.softmax(logits, dim=1).tolist()
+                probs.extend(batch_probs)
+        return np.array(probs)
 
     def evaluate(self, y_test, y_pred):
         accuracy = accuracy_score(y_test, y_pred)

@@ -45,6 +45,10 @@ use_cv = false
 # Number of CV folds (only used if use_cv = true)
 cv_folds = 5
 
+[ensemble]
+method = ["voting", "stacking"]
+stacking_estimator = "RandomForest"
+
 [features.bert_classifier.params]
 model_name = "google-bert/bert-base-uncased"
 max_length = 128
