@@ -122,7 +122,22 @@ AH\&AITD & 12K & 50.0 & 50.0 \\
 \label{sec:method}
 % Clearly describe the method you employed to address your problem. Mention any libraries utilised, and ensure your explanation is accessible to individuals with fundamental NLP knowledge. Reference relevant literature where applicable. Additionally, mention preprocessing steps and dataset division into training and testing sets (if applicable).
 
+% from proposal, TODO update
 First the chosen features will be extracted for each entry in the datasets. Examples would be using a language model to calculate perplexity, a tokenizer to calculate lexical diversity or a POS tagger to calculate POS tag ratios. Then, a (lightweight) classifier will be trained on these features; so far logistic regression and XGBoost are candidates. To assess individual and combined efficacy, we will test features separately and explore ensembles (e.g., stacking or voting across feature subsets or classifiers). Lastly, the feature importances will be analyzed.
+
+
+\subsection{Feature Extraction}
+\label{sec:feature-extraction}
+For each entry in the dataset, the following features were extracted:
+
+\subsubsection{Punctuation Marks}
+The ratio of punctuation marks to word count was calculated for the following punctuation marks: comma, period, exclamation mark, and question mark.
+
+
+\subsubsection{POS-tags}
+The POS-tags were extracted using the spaCy library. Coarse POS tags (using \begin{verbatim} token.pos_ \end{verbatim}) were used, instead of fine grained tags (\begin{verbatim} token.tag_ \end{verbatim}), to capture the overall patterns in word class usage. Fine grained tags were excluded as they might be too specific for the objective, and yield sparse data. 
+% note: 0.8141 accuracy with POS features. 0.7146 without.
+
 
 \subsection{Evaluation}
 \label{sec:evaluation}
