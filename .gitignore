@@ -233,3 +233,6 @@ results
 *.log
 *.out
 *.synctex.gz
+
+# notebook Linn is using for testing everything.
+exploration_notebook.ipynb

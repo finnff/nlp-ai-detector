@@ -7,32 +7,54 @@ from spacy.parts_of_speech import IDS
 from spacy.attrs import POS as POS_ATTR
 import re
 import spacy
+from math import sqrt
+from collections import Counter
 
+CALCULATE_PERPLEXITY_LOCALLY = False
 
 DEFAULT_DATASET = 'data/datasets/combined_dataset.csv'
 DEFAULT_OUTPUT = 'data/features/extracted_features.csv'
+DEFAULT_PERPLEXITY_OUTPUT = 'data/features/perplexity_results.csv'
 
 # load/compute here for efficiency 
-nlp = spacy.load("en_core_web_sm", disable=["parser", "ner", "lemmatizer"])
+nlp = spacy.load("en_core_web_sm", disable=["ner"])
 COARSE_POS_LABELS = [nlp.vocab.strings[pos_id] for pos_id in IDS.values()]
 COARSE_POS_LABELS = [p for p in COARSE_POS_LABELS if p and p not in ("SPACE", "EOL")]
 POS_INDEX = {label: i for i, label in enumerate(COARSE_POS_LABELS)}
 
 
-def extract_lexical_features(text):
-    # - Type-token ratio
-    # - Unique word ratio
-    # - Average word length
-    # - Vocabulary richness
+def extract_lexical_features(text, doc=None):
+    if(doc is None):
+        doc = nlp(text)
+    
     features = {}
+    
+    # word length
+    sentences = re.split(r'[.!?]+', text)
+    sentences = [s.strip() for s in sentences if s.strip()]
+    words_in_text = [sentence.split() for sentence in sentences]
+    word_lengths = [len(word) for word in words_in_text]
+    
+    features['average_word_length'] = sum(word_lengths) / len(word_lengths)
+    features['word_length_variance'] = np.var(word_lengths)
+    
+    # Root Token Type Ratio (normalizing for text length)
+    lemmas = ([token.lemma_ for token in doc])
+    unique_lemmas = set(lemmas)
+    unique_words = len(unique_lemmas)
+    features['rttr_root_type_token_ratio'] = unique_words / sqrt(len(doc.text.split()))
+    
+    # Hapax Legomena Ratiom which measures the proportion of words that appear only once 
+    lemmas_count = Counter(([token.lemma_ for token in doc]))
+    words_appearing_once = [word for word, count in lemmas_count.items() if count == 1]
+    features['hapax_legomena_ratio'] = len(words_appearing_once) / len(doc.text.split())
+    
     return features
 
 
-def extract_syntactic_features(text):
-    # - Average sentence length
-    # - Sentence length variance
-    # - Parse tree depth
-    # - Clause complexity
+def extract_syntactic_features(text, doc=None):
+    if doc is None:
+        doc = nlp(text)
     
     features = {}
     sentences = re.split(r'[.!?]+', text)
@@ -41,6 +63,18 @@ def extract_syntactic_features(text):
     sentence_lengths = [len(sentence.split()) for sentence in sentences]
     features['average_sentence_length'] = sum(sentence_lengths) / len(sentence_lengths)
     features['sentence_length_variance'] = np.var(sentence_lengths)
+    
+    
+    # parse tree depth, syntactic complexity
+    sentence_depths = []
+
+    for sent in doc.sents:
+        sent_depth = max(len(list(token.ancestors)) for token in sent)
+        sentence_depths.append(sent_depth)
+
+    features['average_parse_depth'] = np.mean(sentence_depths)
+    features['maximum_parse_depth'] = max(sentence_depths)
+    features['parse_depth_variance'] = np.var(sentence_depths)
     
     return features
 
@@ -81,11 +115,26 @@ def extract_pos_features(text=None, doc=None):
     return features
 
 
-def extract_perplexity_features(text):
-    features = {}
-    return features
+def extract_perplexity_features_for_all_samples(perplexity_file=DEFAULT_PERPLEXITY_OUTPUT):
+    if CALCULATE_PERPLEXITY_LOCALLY:
+        print("Calculating perplexity locally.")
+        
+        from perplexity_calc import calculate_perplexity
+        output_path = calculate_perplexity(
+            dataset_path=DEFAULT_DATASET, 
+            output_path=DEFAULT_PERPLEXITY_OUTPUT
+        )
+        perplexity_file = output_path
+    
+    if os.path.exists(perplexity_file):
+        ppl_df = pd.read_csv(perplexity_file)
+        return ppl_df[['orig_index', 'perplexity']]
+    else:
+        print(f"Warning: Perplexity file not found at {perplexity_file}")
+        return pd.DataFrame(columns=['orig_index', 'perplexity'])
+    
 
-
+# TODO: discuss whether to include this (my vote: skip.)
 def extract_burstiness_features(text):
     features = {}
     return features
@@ -94,11 +143,10 @@ def extract_burstiness_features(text):
 def extract_all_features(text=None, doc=None):
     features = {}
     
-    features.update(extract_lexical_features(text))
-    features.update(extract_syntactic_features(text))
+    features.update(extract_lexical_features(text, doc=doc))
+    features.update(extract_syntactic_features(text, doc=doc))
     features.update(extract_punctuation_features(text))
     features.update(extract_pos_features(text=text, doc=doc))
-    features.update(extract_perplexity_features(text))
     features.update(extract_burstiness_features(text))
     
     return features
@@ -124,14 +172,15 @@ def main():
 
     print("\nExtracting features...")
     feature_rows = []
+    valid_indices = []  # Track which original indices we kept
 
     texts = df['text'].astype(str).tolist()
     labels = df['generated'].tolist()
 
-    for row, doc in tqdm(
+    for idx, (row, doc) in enumerate(tqdm(
         zip(df.itertuples(index=False), nlp.pipe(texts, batch_size=args.batch_size, n_process=args.n_process)),
         total=len(df), desc="Processing"
-    ):
+    )):
         text = row.text
         label = row.generated
 
@@ -141,8 +190,27 @@ def main():
         features = extract_all_features(text=text, doc=doc)
         features['generated'] = label
         feature_rows.append(features)
+        valid_indices.append(idx)
 
     features_df = pd.DataFrame(feature_rows)
+    features_df['orig_index'] = valid_indices
+    
+    # add perplexity (calculated in "batch")
+    perplexity_df = extract_perplexity_features_for_all_samples()
+    
+    if not perplexity_df.empty:
+        features_df = features_df.merge(
+            perplexity_df, 
+            on='orig_index', 
+            how='left'
+        )
+        print(f"Added perplexity features for {perplexity_df.shape[0]} samples")
+    else:
+        print("No perplexity features to add")
+    
+    # Drop orig_index as it was just for merging
+    features_df = features_df.drop(columns=['orig_index'])
+    
 
     print(f"\nSaving features to {args.output}")
     os.makedirs(os.path.dirname(args.output), exist_ok=True)
