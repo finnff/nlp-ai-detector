@@ -8,6 +8,7 @@ from features.nb_classifier import NBClassifier
 from features.random_choice import RandomClassifier
 from features.nb_no_stopwords import NBClassifierNoStopwords
 from features.bert_classifier import BERTClassifier
+from features.xgboost_classifier import XGBoostClassifier
 import argparse
 import datetime
 
@@ -28,7 +29,8 @@ def main(config_path='configuration.toml'):
     'nb_classifier': {'name': 'Naive Bayes', 'class': NBClassifier},
     'random_choice': {'name': 'Random Classifier', 'class': RandomClassifier},
     'nb_no_stopwords': {'name': 'NB No Stopwords', 'class': NBClassifierNoStopwords},
-    'bert_classifier': {'name': 'BERT Classifier', 'class': BERTClassifier}
+    'bert_classifier': {'name': 'BERT Classifier', 'class': BERTClassifier},
+    'xgboost_classifier': {'name': 'XGBoost Classifier', 'class': XGBoostClassifier}
     }
     
     # Check for combined dataset files
@@ -83,6 +85,35 @@ def main(config_path='configuration.toml'):
     print(msg)
     print(msg, file=f)
 
+    # Extract features if enabled and not exist
+    if config.get('extract_features', {}).get('enabled', False):
+        features_file = 'data/features/extracted_features.csv'
+        if not os.path.exists(features_file):
+            msg = "Features file not found, extracting features..."
+            print(msg)
+            print(msg, file=f)
+            import extract_features
+            extract_features.main()
+            msg = "Features extracted."
+            print(msg)
+            print(msg, file=f)
+
+    # Preprocess features if enabled
+    if config.get('preprocess_features', {}).get('enabled', False):
+        processed_file = 'data/features/extracted_features_processed.csv'
+        if not os.path.exists(processed_file):
+            msg = "Processed features file not found, preprocessing features..."
+            print(msg)
+            print(msg, file=f)
+            import subprocess
+            result = subprocess.run(['python', 'preprocess_features.py'], capture_output=True, text=True)
+            print(result.stdout)
+            if result.stderr:
+                print(result.stderr)
+            msg = "Features preprocessed."
+            print(msg)
+            print(msg, file=f)
+
     # Limit samples if specified
     if config['num_samples'] > 0:
         ds = ds.shuffle(seed=config['random_state']).select(range(min(config['num_samples'], len(ds))))
@@ -130,6 +161,9 @@ def main(config_path='configuration.toml'):
             print(msg, file=f)
 
             params = config['features'][feat].get('params', {})
+            if feat == 'xgboost_classifier':
+                params['test_size'] = config['test_size']
+                params['random_state'] = config['random_state']
 
             # Special handling for BERT classifier with pretrained model option
             if feat == 'bert_classifier':

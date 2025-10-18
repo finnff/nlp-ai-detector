@@ -11,6 +11,12 @@ random_state = 42
 # Test size for train-test split
 test_size = 0.2
 
+[extract_features]
+enabled = true
+
+[preprocess_features]
+enabled = true
+
 [features.nb_classifier]
 enabled = true
 allow_voting = true
@@ -44,3 +50,13 @@ model_name = "google-bert/bert-base-uncased"
 max_length = 128
 epochs = 1
 lr = 0.005
+
+[features.xgboost_classifier]
+enabled = true
+allow_voting = true
+
+[features.xgboost_classifier.params]
+features_file = "data/features/extracted_features_processed.csv"
+n_estimators = 100
+max_depth = 6
+learning_rate = 0.1

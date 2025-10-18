@@ -40,6 +40,10 @@ pip install torch==2.7.1 torchvision==0.22.1 torchaudio==2.7.1 --index-url https
 pip install torch==2.7.1 torchvision==0.22.1 torchaudio==2.7.1 --index-url https://download.pytorch.org/whl/cpu
 
 
+#install Spacey models
+python -m spacy download en
+
+
 ```
 
 ## Usage

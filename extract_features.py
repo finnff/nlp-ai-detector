@@ -10,7 +10,7 @@ import spacy
 from math import sqrt
 from collections import Counter
 
-CALCULATE_PERPLEXITY_LOCALLY = False
+CALCULATE_PERPLEXITY_LOCALLY = True
 
 DEFAULT_DATASET = 'data/datasets/combined_dataset.csv'
 DEFAULT_OUTPUT = 'data/features/extracted_features.csv'
@@ -118,20 +118,31 @@ def extract_pos_features(text=None, doc=None):
 def extract_perplexity_features_for_all_samples(perplexity_file=DEFAULT_PERPLEXITY_OUTPUT):
     if CALCULATE_PERPLEXITY_LOCALLY:
         print("Calculating perplexity locally.")
-        
+
         from perplexity_calc import calculate_perplexity
         output_path = calculate_perplexity(
-            dataset_path=DEFAULT_DATASET, 
+            dataset_path=DEFAULT_DATASET,
             output_path=DEFAULT_PERPLEXITY_OUTPUT
         )
         perplexity_file = output_path
-    
+
     if os.path.exists(perplexity_file):
         ppl_df = pd.read_csv(perplexity_file)
         return ppl_df[['orig_index', 'perplexity']]
     else:
-        print(f"Warning: Perplexity file not found at {perplexity_file}")
-        return pd.DataFrame(columns=['orig_index', 'perplexity'])
+        # Look for latest timestamped file
+        import glob
+        pattern = 'data/features/perplexity_results_*.csv'
+        files = glob.glob(pattern)
+        if files:
+            files.sort(key=os.path.getmtime, reverse=True)
+            perplexity_file = files[0]
+            print(f"Using latest perplexity file: {perplexity_file}")
+            ppl_df = pd.read_csv(perplexity_file)
+            return ppl_df[['orig_index', 'perplexity']]
+        else:
+            print(f"Warning: No perplexity file found at {perplexity_file} or timestamped versions")
+            return pd.DataFrame(columns=['orig_index', 'perplexity'])
     
 
 # TODO: discuss whether to include this (my vote: skip.)
@@ -155,8 +166,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', default=DEFAULT_DATASET)
     parser.add_argument('--output', default=DEFAULT_OUTPUT)
-    parser.add_argument('--batch_size', type=int, default=200)
-    parser.add_argument('--n_process', type=int, default=4)
+    parser.add_argument('--batch_size', type=int, default=500)
+    parser.add_argument('--n_process', type=int, default=-1)
     args = parser.parse_args()
     
 
