@@ -236,3 +236,5 @@ results
 
 # notebook Linn is using for testing everything.
 exploration_notebook.ipynb
+# build script for the project report, since latexmk doesn't work with the acl template 
+build.sh
