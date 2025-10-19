@@ -3,7 +3,7 @@ import tomllib
 from datasets import load_from_disk, Dataset
 import pandas as pd
 from sklearn.metrics import accuracy_score, classification_report
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, KFold
 from features.nb_classifier import NBClassifier
 from features.random_choice import RandomClassifier
 from features.nb_no_stopwords import NBClassifierNoStopwords
@@ -112,12 +112,16 @@ def main(config_path='configuration.toml'):
     msg = "\nEnabled Features:"
     print(msg)
     print(msg, file=f)
-    
+
     for feat, info in features.items():
         if config['features'][feat]['enabled']:
             params = config['features'][feat].get('params', {})
             allow_voting = config['features'][feat]['allow_voting']
-            msg = f"- {info['name']}: params={params}, allow_voting={allow_voting}"
+            extra = ""
+            if feat == 'bert_classifier':
+                use_cv = config['features'][feat].get('use_cv', False)
+                extra = f", use_cv={use_cv}"
+            msg = f"- {info['name']}: params={params}, allow_voting={allow_voting}{extra}"
             print(msg)
             print(msg, file=f)
 
@@ -131,11 +135,16 @@ def main(config_path='configuration.toml'):
 
             params = config['features'][feat].get('params', {})
 
+            use_cv = False
+            cv_folds = 5
+
             # Special handling for BERT classifier with pretrained model option
             if feat == 'bert_classifier':
                 use_pretrained = config['features'][feat].get('use_pretrained', False)
                 model_path = config['features'][feat].get('model_path', 'models/bert_classifier.pt')
                 save_after_training = config['features'][feat].get('save_after_training', False)
+                use_cv = config['features'][feat].get('use_cv', False)
+                cv_folds = config['features'][feat].get('cv_folds', 5)
 
                 if use_pretrained:
                     # Load pretrained model
@@ -154,19 +163,50 @@ def main(config_path='configuration.toml'):
                         print(msg, file=f)
                         continue
                 else:
-                    # Train new model
-                    clf = info['class'](**params)
-                    clf.fit(X_train, y_train)
-                    msg = "Model trained"
-                    print(msg)
-                    print(msg, file=f)
-
-                    # Save model if requested
-                    if save_after_training:
-                        clf.save_model(model_path)
-                        msg = f"Model saved to {model_path}"
+                    if use_cv:
+                        # Cross-validation
+                        kf = KFold(n_splits=cv_folds, shuffle=True, random_state=config['random_state'])
+                        all_y_test = []
+                        all_y_pred = []
+                        clf = None
+                        for fold, (train_idx, test_idx) in enumerate(kf.split(texts)):
+                            X_train_cv = [texts[i] for i in train_idx]
+                            X_test_cv = [texts[i] for i in test_idx]
+                            y_train_cv = [labels[i] for i in train_idx]
+                            y_test_cv = [labels[i] for i in test_idx]
+                            clf = info['class'](**params)
+                            clf.fit(X_train_cv, y_train_cv)
+                            y_pred_cv = clf.predict(X_test_cv)
+                            all_y_test.extend(y_test_cv)
+                            all_y_pred.extend(y_pred_cv)
+                            msg = f"Fold {fold+1}/{cv_folds} completed"
+                            print(msg)
+                            print(msg, file=f)
+                        # Evaluate on all CV predictions
+                        accuracy_feat, report_feat = clf.evaluate(all_y_test, all_y_pred)
+                        msg = f"Cross-validation completed with {cv_folds} folds"
                         print(msg)
                         print(msg, file=f)
+                        # Predict on test set for voting using last clf
+                        y_pred_feat = clf.predict(X_test)
+                        predictions[feat] = y_pred_feat
+                        # Do not save model in CV mode
+                    else:
+                        # Train new model
+                        clf = info['class'](**params)
+                        clf.fit(X_train, y_train)
+                        y_pred_feat = clf.predict(X_test)
+                        accuracy_feat, report_feat = clf.evaluate(y_test, y_pred_feat)
+                        msg = "Model trained"
+                        print(msg)
+                        print(msg, file=f)
+
+                        # Save model if requested
+                        if save_after_training:
+                            clf.save_model(model_path)
+                            msg = f"Model saved to {model_path}"
+                            print(msg)
+                            print(msg, file=f)
             else:
                 # Regular handling for other classifiers
                 clf = info['class'](**params)
@@ -177,9 +217,11 @@ def main(config_path='configuration.toml'):
                     print(msg)
                     print(msg, file=f)
 
-            y_pred_feat = clf.predict(X_test)
-            predictions[feat] = y_pred_feat
-            accuracy_feat, report_feat = clf.evaluate(y_test, y_pred_feat)
+            if feat != 'bert_classifier' or not use_cv:
+                if 'y_pred_feat' not in locals():
+                    y_pred_feat = clf.predict(X_test)
+                    predictions[feat] = y_pred_feat
+                    accuracy_feat, report_feat = clf.evaluate(y_test, y_pred_feat)
 
             msg = f"Accuracy: {accuracy_feat:.4f}"
             print(msg)
