@@ -160,6 +160,8 @@ def main(config_path='configuration.toml'):
 
     predictions = {}
 
+    ### absolutely disguisting code but works for now ###
+
     for feat, info in features.items():
         if config['features'][feat]['enabled']:
             msg = f"\n{info['name']}:"
@@ -259,7 +261,7 @@ def main(config_path='configuration.toml'):
                         msg = f"Model saved to {model_path}"
                         print(msg)
                         print(msg, file=f)
-        else:
+            else:
                 # Regular handling for other classifiers
                 clf = info['class'](**params)
 
