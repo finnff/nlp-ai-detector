@@ -8,6 +8,7 @@ from features.nb_classifier import NBClassifier
 from features.random_choice import RandomClassifier
 from features.nb_no_stopwords import NBClassifierNoStopwords
 from features.bert_classifier import BERTClassifier
+from features.deberta_classifier import DeBERTaClassifier
 from features.xgboost_classifier import XGBoostClassifier
 import argparse
 import datetime
@@ -30,6 +31,7 @@ def main(config_path='configuration.toml'):
     'random_choice': {'name': 'Random Classifier', 'class': RandomClassifier},
     'nb_no_stopwords': {'name': 'NB No Stopwords', 'class': NBClassifierNoStopwords},
     'bert_classifier': {'name': 'BERT Classifier', 'class': BERTClassifier},
+    'deberta_classifier': {'name': 'DeBERTa Classifier', 'class': DeBERTaClassifier},
     'xgboost_classifier': {'name': 'XGBoost Classifier', 'class': XGBoostClassifier}
     }
     
@@ -177,6 +179,42 @@ def main(config_path='configuration.toml'):
                         clf = info['class'].from_pretrained(
                             model_path,
                             model_name=params.get('model_name', 'google-bert/bert-base-uncased'),
+                            lr=params.get('lr', 1e-3)
+                        )
+                        msg = f"Loaded pretrained model from {model_path}"
+                        print(msg)
+                        print(msg, file=f)
+                    except FileNotFoundError:
+                        msg = f"Error: Pretrained model not found at {model_path}. Please train a model first or set use_pretrained = false."
+                        print(msg)
+                        print(msg, file=f)
+                        continue
+                else:
+                    # Train new model
+                    clf = info['class'](**params)
+                    clf.fit(X_train, y_train)
+                    msg = "Model trained"
+                    print(msg)
+                    print(msg, file=f)
+
+                    # Save model if requested
+                    if save_after_training:
+                        clf.save_model(model_path)
+                        msg = f"Model saved to {model_path}"
+                        print(msg)
+                        print(msg, file=f)
+            # Special handling for DeBERTa classifier with pretrained model option
+            elif feat == 'deberta_classifier':
+                use_pretrained = config['features'][feat].get('use_pretrained', False)
+                model_path = config['features'][feat].get('model_path', 'models/deberta_classifier.pt')
+                save_after_training = config['features'][feat].get('save_after_training', False)
+
+                if use_pretrained:
+                    # Load pretrained model
+                    try:
+                        clf = info['class'].from_pretrained(
+                            model_path,
+                            model_name=params.get('model_name', 'microsoft/deberta-v3-base'),
                             lr=params.get('lr', 1e-3)
                         )
                         msg = f"Loaded pretrained model from {model_path}"
