@@ -250,8 +250,10 @@ results
 
 # too big for git
 data/datasets/combined_dataset.csv
+data/features/extracted_features.csv
 
 # notebook Linn is using for testing everything.
 exploration_notebook.ipynb
 # build script for the project report, since latexmk doesn't work with the acl template 
 build.sh
+data/features/extracted_features.csv

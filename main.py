@@ -579,7 +579,7 @@ def main(config_path='configuration.toml'):
                         msg = f"F1 Score (Weighted): {f1_weighted_feat:.4f}"
                         print(msg)
                         print(msg, file=f)
-                        # Predict on test set for voting using last clf
+                      # Predict on test set for voting using last clf
                         y_pred_feat = clf.predict(X_test)
                         predictions[feat] = y_pred_feat
                         trained_clfs[feat] = clf
