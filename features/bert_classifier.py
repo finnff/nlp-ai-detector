@@ -153,7 +153,7 @@ class BERTClassifier(BaseEstimator, ClassifierMixin):
         if not os.path.exists(path):
             raise FileNotFoundError(f"Model file not found at {path}")
 
-        checkpoint = torch.load(path, map_location=self.device)
+        checkpoint = torch.load(path, map_location=self.device, weights_only=True)
 
         # Verify model compatibility
         if checkpoint['model_name'] != self.model.config._name_or_path:
@@ -185,7 +185,7 @@ class BERTClassifier(BaseEstimator, ClassifierMixin):
             raise FileNotFoundError(f"Model file not found at {path}")
 
         # Load checkpoint to get configuration
-        checkpoint = torch.load(path, map_location='cuda' if torch.cuda.is_available() else 'cpu')
+        checkpoint = torch.load(path, map_location='cuda' if torch.cuda.is_available() else 'cpu', weights_only=True)
 
         # Create instance with saved configuration
         instance = cls(
