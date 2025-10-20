@@ -76,7 +76,40 @@ class DeBERTaClassifier:
                 preds.extend(batch_preds)
         return preds
 
-    def evaluate(self, y_test, y_pred):
+    def predict_proba(self, X_test):
+        """
+        Make probability predictions for DeBERTa classifier.
+        Returns softmax probabilities for both classes.
+        """
+        if not self.is_fitted:
+            raise ValueError("Model must be fitted before prediction")
+
+        self.model.eval()
+        dataloader = self._create_dataloader(X_test, batch_size=32, shuffle=False)
+
+        all_probs = []
+        with torch.no_grad():
+            for inputs in dataloader:
+                outputs = self.model(**inputs)
+                cls_emb = outputs.last_hidden_state[:, 0, :]
+                logits = self.classifier(cls_emb)
+                probs = torch.softmax(logits, dim=1)
+                all_probs.extend(probs.cpu().numpy())
+
+        return np.array(all_probs)
+
+    def evaluate(self, y_test, y_pred, y_scores=None):
+        """
+        Enhanced evaluation method with AUROC support.
+
+        Args:
+            y_test: True labels
+            y_pred: Predicted labels
+            y_scores: Predicted probabilities for positive class (optional)
+
+        Returns:
+            Tuple of (accuracy, report, f1_macro, f1_weighted, auroc)
+        """
         accuracy = accuracy_score(y_test, y_pred)
 
         # Calculate F1 scores directly for full precision
@@ -85,7 +118,17 @@ class DeBERTaClassifier:
         f1_per_class = f1_score(y_test, y_pred, average=None)
 
         report = classification_report(y_test, y_pred, target_names=['Human Written', 'AI Generated'], digits=4)
-        return accuracy, report, f1_macro, f1_weighted
+
+        # Calculate AUROC if scores provided
+        auroc = None
+        if y_scores is not None:
+            try:
+                from sklearn.metrics import roc_auc_score
+                auroc = roc_auc_score(y_test, y_scores)
+            except Exception as e:
+                print(f"⚠️  Could not calculate AUROC: {e}")
+
+        return accuracy, report, f1_macro, f1_weighted, auroc
 
     def save_model(self, path):
         """

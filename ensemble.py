@@ -500,10 +500,88 @@ class Ensemble:
             print(f"⚠️  Enhanced progress tracking failed for {estimator_name}, using standard training: {e}")
             return estimator.fit(X_meta, y)
 
-    def evaluate(self, y_test, y_pred, target_names=['Human Written', 'AI Generated']):
+    def evaluate(self, y_test, y_pred, y_scores=None, target_names=['Human Written', 'AI Generated']):
         """
-        Evaluate the ensemble predictions.
+        Enhanced ensemble evaluation with AUROC support.
+
+        Args:
+            y_test: True labels
+            y_pred: Predicted labels
+            y_scores: Predicted probabilities for positive class (optional)
+            target_names: Target class names for reporting
+
+        Returns:
+            Tuple of (accuracy, report, auroc)
         """
         accuracy = accuracy_score(y_test, y_pred)
         report = classification_report(y_test, y_pred, target_names=target_names)
-        return accuracy, report
+
+        # Calculate AUROC if scores provided
+        auroc = None
+        if y_scores is not None:
+            try:
+                from sklearn.metrics import roc_auc_score
+                auroc = roc_auc_score(y_test, y_scores)
+            except Exception as e:
+                print(f"⚠️  Could not calculate AUROC for ensemble: {e}")
+
+        return accuracy, report, auroc
+
+    def predict_proba_all_methods(self, X_text, X_features=None):
+        """
+        Get probability predictions for all ensemble methods.
+
+        Args:
+            X_text: Text data for text-based classifiers
+            X_features: Feature data for feature-based classifiers (optional)
+
+        Returns:
+            Dictionary mapping method names to probability predictions
+        """
+        all_predictions = self.get_all_predictions(X_text, X_features)
+        proba_results = {}
+
+        # Get probabilities from each classifier that supports it
+        for name in self.text_classifiers:
+            clf = self.text_classifiers[name]
+            if hasattr(clf, 'predict_proba'):
+                try:
+                    proba_results[name] = clf.predict_proba(X_text)
+                except Exception as e:
+                    print(f"⚠️  Could not get probabilities from {name}: {e}")
+
+        # Get probabilities from feature classifiers
+        if X_features is not None:
+            for name in self.feature_classifiers:
+                clf = self.feature_classifiers[name]
+                if hasattr(clf, 'predict_proba'):
+                    try:
+                        proba_results[name] = clf.predict_proba(X_features)
+                    except Exception as e:
+                        print(f"⚠️  Could not get probabilities from {name}: {e}")
+
+        # Calculate ensemble probabilities if meta-classifier exists
+        if hasattr(self, 'meta_classifier') and hasattr(self.meta_classifier, 'predict_proba'):
+            try:
+                X_meta = self._build_meta_features(all_predictions)
+                proba_results['stacking'] = self.meta_classifier.predict_proba(X_meta)
+            except Exception as e:
+                print(f"⚠️  Could not get stacking probabilities: {e}")
+
+        # Calculate voting probabilities (average of individual probabilities)
+        if proba_results:
+            try:
+                # Stack all probability arrays and average them
+                all_proba_arrays = []
+                for name, probs in proba_results.items():
+                    if 'ensemble' not in name.lower():  # Don't include ensemble methods in voting
+                        all_proba_arrays.append(probs)
+
+                if all_proba_arrays:
+                    # Average probabilities across all classifiers
+                    voting_proba = np.mean(all_proba_arrays, axis=0)
+                    proba_results['voting'] = voting_proba
+            except Exception as e:
+                print(f"⚠️  Could not calculate voting probabilities: {e}")
+
+        return proba_results
