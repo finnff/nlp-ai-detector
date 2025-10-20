@@ -11,6 +11,7 @@ from features.bert_classifier import BERTClassifier
 from features.deberta_classifier import DeBERTaClassifier
 from features.xgboost_classifier import XGBoostClassifier
 from ensemble import Ensemble
+from evaluation.auroc_evaluator import AUROCEvaluator
 import argparse
 import datetime
 import sys
@@ -38,32 +39,43 @@ def check_perplexity_status(dataset_path):
         return False, None
 
 class ResultsTracker:
-    """Track and compare classifier results for final summary"""
+    """Track and compare classifier results for final summary with AUROC support"""
 
     def __init__(self):
         self.individual_results = {}
         self.ensemble_results = {}
+        self.auroc_scores = {}  # Track AUROC scores separately
         self.best_individual = None
 
-    def add_individual_result(self, name, accuracy, report):
-        """Store individual classifier result"""
+    def add_individual_result(self, name, accuracy, report, auroc=None):
+        """Store individual classifier result with AUROC"""
         macro_f1, weighted_f1 = extract_f1_score(report)
         self.individual_results[name] = {
             'accuracy': accuracy,
             'macro_f1': macro_f1,
             'weighted_f1': weighted_f1,
-            'report': report
+            'report': report,
+            'auroc': auroc
         }
 
-    def add_ensemble_result(self, name, accuracy, report):
-        """Store ensemble result"""
+        # Store AUROC score if available
+        if auroc is not None:
+            self.auroc_scores[name] = auroc
+
+    def add_ensemble_result(self, name, accuracy, report, auroc=None):
+        """Store ensemble result with AUROC"""
         macro_f1, weighted_f1 = extract_f1_score(report)
         self.ensemble_results[name] = {
             'accuracy': accuracy,
             'macro_f1': macro_f1,
             'weighted_f1': weighted_f1,
-            'report': report
+            'report': report,
+            'auroc': auroc
         }
+
+        # Store AUROC score if available
+        if auroc is not None:
+            self.auroc_scores[name] = auroc
 
     def get_best_individual(self):
         """Find best individual classifier by accuracy"""
@@ -152,30 +164,32 @@ def print_final_summary(results_tracker, output_file=None):
         print("FINAL RESULTS SUMMARY", file=output_file)
         print("="*header_width, file=output_file)
 
-    # Print table header
-    print(f"{'CLASSIFIER':<{max_name_length}} {'ACCURACY':<10} {'MACRO F1':<10} {'WEIGHTED F1':<12}")
-    print("=" * (max_name_length + 44))
+    # Print table header with AUROC
+    print(f"{'CLASSIFIER':<{max_name_length}} {'ACCURACY':<10} {'MACRO F1':<10} {'WEIGHTED F1':<12} {'AUROC':<8}")
+    print("=" * (max_name_length + 52))
 
     if output_file:
-        print(f"{'CLASSIFIER':<{max_name_length}} {'ACCURACY':<10} {'MACRO F1':<10} {'WEIGHTED F1':<12}", file=output_file)
-        print("=" * (max_name_length + 44), file=output_file)
+        print(f"{'CLASSIFIER':<{max_name_length}} {'ACCURACY':<10} {'MACRO F1':<10} {'WEIGHTED F1':<12} {'AUROC':<8}", file=output_file)
+        print("=" * (max_name_length + 52), file=output_file)
 
     # Print individual classifier results
     for name, result in results_tracker.individual_results.items():
-        print(f"{name:<{max_name_length}} {result['accuracy']:<10.4f} {result['macro_f1']:<10.4f} {result['weighted_f1']:<12.4f}")
+        auroc_str = f"{result['auroc']:.4f}" if result['auroc'] is not None else "N/A"
+        print(f"{name:<{max_name_length}} {result['accuracy']:<10.4f} {result['macro_f1']:<10.4f} {result['weighted_f1']:<12.4f} {auroc_str:<8}")
         if output_file:
-            print(f"{name:<{max_name_length}} {result['accuracy']:<10.4f} {result['macro_f1']:<10.4f} {result['weighted_f1']:<12.4f}", file=output_file)
+            print(f"{name:<{max_name_length}} {result['accuracy']:<10.4f} {result['macro_f1']:<10.4f} {result['weighted_f1']:<12.4f} {auroc_str:<8}", file=output_file)
 
     # Print separator
-    print("-" * (max_name_length + 44))
+    print("-" * (max_name_length + 52))
     if output_file:
-        print("-" * (max_name_length + 44), file=output_file)
+        print("-" * (max_name_length + 52), file=output_file)
 
     # Print ensemble results with color coding
     for name, result in results_tracker.ensemble_results.items():
+        auroc_str = f"{result['auroc']:.4f}" if result['auroc'] is not None else "N/A"
         if use_colors:
             color = get_comparison_color(result['accuracy'], best_accuracy)
-            print(f"{color}{name:<{max_name_length}} {result['accuracy']:<10.4f} {result['macro_f1']:<10.4f} {result['weighted_f1']:<12.4f}{RESET}")
+            print(f"{color}{name:<{max_name_length}} {result['accuracy']:<10.4f} {result['macro_f1']:<10.4f} {result['weighted_f1']:<12.4f} {auroc_str:<8}{RESET}")
         else:
             # Add performance indicators for non-color output
             diff = result['accuracy'] - best_accuracy
@@ -185,7 +199,7 @@ def print_final_summary(results_tracker, output_file=None):
                 indicator = "▼"
             else:
                 indicator = "►"
-            print(f"{indicator} {name:<{max_name_length-1}} {result['accuracy']:<10.4f} {result['macro_f1']:<10.4f} {result['weighted_f1']:<12.4f}")
+            print(f"{indicator} {name:<{max_name_length-1}} {result['accuracy']:<10.4f} {result['macro_f1']:<10.4f} {result['weighted_f1']:<12.4f} {auroc_str:<8}")
 
         if output_file:
             # Add performance indicators to file output
@@ -196,11 +210,11 @@ def print_final_summary(results_tracker, output_file=None):
                 indicator = "▼"
             else:
                 indicator = "►"
-            print(f"{indicator} {name:<{max_name_length-1}} {result['accuracy']:<10.4f} {result['macro_f1']:<10.4f} {result['weighted_f1']:<12.4f}", file=output_file)
+            print(f"{indicator} {name:<{max_name_length-1}} {result['accuracy']:<10.4f} {result['macro_f1']:<10.4f} {result['weighted_f1']:<12.4f} {auroc_str:<8}", file=output_file)
 
-    print("=" * (max_name_length + 44))
+    print("=" * (max_name_length + 52))
     if output_file:
-        print("=" * (max_name_length + 44), file=output_file)
+        print("=" * (max_name_length + 52), file=output_file)
 
     print("="*80)
     if output_file:
@@ -243,9 +257,13 @@ def main(config_path='configuration.toml'):
     output_file = f"results/results_{timestamp}.txt"
     f = open(output_file, 'w')
 
-    # Initialize results tracker
+    # Initialize results tracker and AUROC evaluator
     results_tracker = ResultsTracker()
-    
+    auroc_evaluator = AUROCEvaluator()
+
+    # Load dataset metadata for AUROC diagram title
+    auroc_evaluator.load_dataset_metadata()
+
     # Define features dictionary
     ## Define features dictionary
     features = {
@@ -568,8 +586,25 @@ def main(config_path='configuration.toml'):
                             msg = f"Fold {fold+1}/{cv_folds} completed"
                             print(msg)
                             print(msg, file=f)
+                        # Get AUROC scores for cross-validation
+                        auroc_feat = None
+                        y_scores_cv = None
+                        if hasattr(clf, 'predict_proba'):
+                            try:
+                                y_scores_cv = clf.predict_proba(X_test_cv)
+                                if y_scores_cv.ndim > 1:
+                                    y_scores_cv = y_scores_cv[:, 1]  # Take positive class
+                                auroc_feat = auroc_evaluator.calculate_auroc(
+                                    np.array(all_y_test), np.array(y_scores_cv), feat
+                                )
+                                auroc_evaluator.collect_roc_curve(
+                                    np.array(all_y_test), np.array(y_scores_cv), feat
+                                )
+                            except Exception as e:
+                                print(f"⚠️  Could not calculate AUROC for {feat}: {e}")
+
                         # Evaluate on all CV predictions
-                        accuracy_feat, report_feat, f1_macro_feat, f1_weighted_feat = clf.evaluate(all_y_test, all_y_pred)
+                        accuracy_feat, report_feat, f1_macro_feat, f1_weighted_feat, auroc_cv = clf.evaluate(all_y_test, all_y_pred, y_scores_cv)
                         msg = f"Cross-validation completed with {cv_folds} folds"
                         print(msg)
                         print(msg, file=f)
@@ -645,13 +680,28 @@ def main(config_path='configuration.toml'):
                         print(msg, file=f)
 
             if feat != 'bert_classifier' or not use_cv:
-                # Each classifier should generate its own predictions
+                # Each classifier should generate its own predictions with AUROC
+                y_scores_feat = None
+                auroc_feat = None
+
                 if feat == 'xgboost_classifier':
                     # XGBoost: Use features for prediction
                     if X_test_feat is not None:
                         y_pred_feat = clf.predict(X_test_feat)
                         predictions[feat] = y_pred_feat
-                        accuracy_feat, report_feat, f1_macro_feat, f1_weighted_feat = clf.evaluate(y_test, y_pred_feat)
+
+                        # Get AUROC scores
+                        if hasattr(clf, 'predict_proba'):
+                            try:
+                                y_scores_feat = clf.predict_proba(X_test_feat)
+                                if y_scores_feat.ndim > 1:
+                                    y_scores_feat = y_scores_feat[:, 1]  # Take positive class
+                                auroc_feat = auroc_evaluator.calculate_auroc(y_test, y_scores_feat, feat)
+                                auroc_evaluator.collect_roc_curve(y_test, y_scores_feat, feat)
+                            except Exception as e:
+                                print(f"⚠️  Could not calculate AUROC for {feat}: {e}")
+
+                        accuracy_feat, report_feat, f1_macro_feat, f1_weighted_feat, auroc_eval = clf.evaluate(y_test, y_pred_feat, y_scores_feat)
                         trained_clfs[feat] = clf
                     else:
                         msg = "⚠️  No test features available for XGBoost"
@@ -662,11 +712,24 @@ def main(config_path='configuration.toml'):
                     # Other classifiers: Use text as usual
                     y_pred_feat = clf.predict(X_test)
                     predictions[feat] = y_pred_feat
-                accuracy_feat, report_feat, f1_macro_feat, f1_weighted_feat = clf.evaluate(y_test, y_pred_feat)
+
+                    # Get AUROC scores
+                    if hasattr(clf, 'predict_proba'):
+                        try:
+                            y_scores_feat = clf.predict_proba(X_test)
+                            if y_scores_feat.ndim > 1:
+                                y_scores_feat = y_scores_feat[:, 1]  # Take positive class
+                            auroc_feat = auroc_evaluator.calculate_auroc(y_test, y_scores_feat, feat)
+                            auroc_evaluator.collect_roc_curve(y_test, y_scores_feat, feat)
+                        except Exception as e:
+                            print(f"⚠️  Could not calculate AUROC for {feat}: {e}")
+
+                    accuracy_feat, report_feat, f1_macro_feat, f1_weighted_feat, auroc_eval = clf.evaluate(y_test, y_pred_feat, y_scores_feat)
+
                 trained_clfs[feat] = clf
 
-            # Store result in tracker
-            results_tracker.add_individual_result(feat, accuracy_feat, report_feat)
+            # Store result in tracker with AUROC
+            results_tracker.add_individual_result(feat, accuracy_feat, report_feat, auroc_feat)
 
             msg = f"Accuracy: {accuracy_feat:.4f}"
             print(msg)
@@ -679,6 +742,12 @@ def main(config_path='configuration.toml'):
             msg = f"F1 Score (Weighted): {f1_weighted_feat:.4f}"
             print(msg)
             print(msg, file=f)
+
+            # Print AUROC if available
+            if auroc_feat is not None:
+                msg = f"AUROC: {auroc_feat:.4f}"
+                print(msg)
+                print(msg, file=f)
 
             msg = "\nClassification Report:"
             print(msg)
@@ -731,8 +800,15 @@ def main(config_path='configuration.toml'):
         else:
             all_predictions = ensemble.predict_all_methods(X_test)
 
+        # Get ensemble probabilities for AUROC
+        ensemble_proba = ensemble.predict_proba_all_methods(X_test, X_features=X_test_feat)
+
         # Process each method using cached predictions
         for method in methods:
+            y_pred_ensemble = None
+            y_scores_ensemble = None
+            auroc_ensemble = None
+
             if method in all_predictions:
                 y_pred_ensemble = all_predictions[method]
             else:
@@ -742,6 +818,19 @@ def main(config_path='configuration.toml'):
                     y_pred_ensemble = ensemble.predict(X_test, X_features=X_test_feat)
                 else:
                     y_pred_ensemble = ensemble.predict(X_test)
+
+            # Get ensemble AUROC scores
+            method_key = f"ensemble_{method}"
+            if method_key in ensemble_proba:
+                y_scores_ensemble = ensemble_proba[method_key]
+                if y_scores_ensemble.ndim > 1:
+                    y_scores_ensemble = y_scores_ensemble[:, 1]  # Take positive class
+
+                try:
+                    auroc_ensemble = auroc_evaluator.calculate_auroc(y_test, y_scores_ensemble, method_key)
+                    auroc_evaluator.collect_roc_curve(y_test, y_scores_ensemble, method_key)
+                except Exception as e:
+                    print(f"⚠️  Could not calculate AUROC for ensemble {method}: {e}")
 
             accuracy_ensemble = accuracy_score(y_test, y_pred_ensemble)
 
@@ -756,12 +845,12 @@ def main(config_path='configuration.toml'):
                 digits=4
             )
 
-            # Store ensemble result in tracker
+            # Store ensemble result in tracker with AUROC
             if method == 'stacking':
                 ensemble_name = f"Ensemble ({method.capitalize()} with {stacking_estimator})"
             else:
                 ensemble_name = f"Ensemble ({method.capitalize()})"
-            results_tracker.add_ensemble_result(ensemble_name, accuracy_ensemble, report_ensemble)
+            results_tracker.add_ensemble_result(ensemble_name, accuracy_ensemble, report_ensemble, auroc_ensemble)
 
             if method == 'stacking':
                 msg = f"\nEnsemble ({method.capitalize()} with {stacking_estimator}):"
@@ -790,11 +879,29 @@ def main(config_path='configuration.toml'):
             print(msg)
             print(msg, file=f)
 
+            # Print AUROC if available
+            if auroc_ensemble is not None:
+                msg = f"AUROC: {auroc_ensemble:.4f}"
+                print(msg)
+                print(msg, file=f)
+
             msg = "\nClassification Report:"
             print(msg)
             print(msg, file=f)
             print(report_ensemble)
             print(report_ensemble, file=f)
+
+    # Generate ROC curve diagram
+    print("\n📈 Generating ROC curve diagram...")
+    diagram_path = auroc_evaluator.generate_roc_diagram(timestamp, include_ensembles=True)
+
+    # Print AUROC performance summary
+    print(auroc_evaluator.generate_auroc_summary())
+    print(auroc_evaluator.generate_auroc_summary(), file=f)
+
+    if diagram_path:
+        print(f"📈 ROC Curve Diagram: {diagram_path}")
+        print(f"📈 ROC Curve Diagram: {diagram_path}", file=f)
 
     # Print final results summary
     print_final_summary(results_tracker, f)

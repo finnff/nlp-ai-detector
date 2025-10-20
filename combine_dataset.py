@@ -6,6 +6,8 @@ import datasets
 from datasets import load_from_disk, Dataset
 import numpy as np  # For potential use, though not strictly needed here
 import argparse
+import datetime
+import json
 
 # Disable caching to force reload datasets
 datasets.disable_caching()
@@ -273,12 +275,40 @@ if 'perplexity' in df.columns:
 else:
     print(f"   ⚠️  No perplexity column found")
 
-# Save based on config
+# Save based on config first
 save_path = os.path.join(datasets_dir, 'combined_dataset')
 if config['use_arrow']:
     Dataset.from_pandas(df).save_to_disk(save_path)
 else:
     df.to_csv(f"{save_path}.csv", index=False)
+
+# Calculate human/AI counts after processing
+generated_counts = df['generated'].value_counts()
+human_count = generated_counts.get(0, 0)
+ai_count = generated_counts.get(1, 0)
+
+# Save dataset configuration metadata
+metadata = {
+    'title': config['Title'],
+    'total_samples': config['total_samples'],
+    'actual_samples': len(df),
+    'use_arrow': config['use_arrow'],
+    'random': config.get('random', False),
+    'balance_classes': config.get('balance_classes', False),
+    'enabled_datasets': enabled_sources,
+    'test_split': 0.2,  # Default test split used in main.py
+    'timestamp': datetime.datetime.now().isoformat(),
+    'human_count': int(human_count),
+    'ai_count': int(ai_count),
+    'has_perplexity': 'perplexity' in df.columns,
+    'dataset_shape': df.shape
+}
+
+# Save metadata as JSON
+metadata_path = os.path.join(datasets_dir, 'dataset_metadata.json')
+with open(metadata_path, 'w') as f:
+    json.dump(metadata, f, indent=2)
+print(f"💾 Dataset metadata saved: {metadata_path}")
 
 # Print sources with details
 print("\nSources:")
