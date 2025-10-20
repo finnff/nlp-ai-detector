@@ -6,6 +6,7 @@ from sklearn.metrics import accuracy_score, classification_report, f1_score
 from tqdm import tqdm
 import os
 import json
+import numpy as np
 
 class TextDataset(Dataset):
     def __init__(self, texts, labels=None):
@@ -33,6 +34,7 @@ class DeBERTaClassifier:
         self.batch_size = batch_size
         self.optimizer = torch.optim.Adam(self.classifier.parameters(), lr=lr)
         self.criterion = nn.CrossEntropyLoss()
+        self.is_fitted = False
 
     def collate_fn(self, batch):
         if isinstance(batch[0], tuple):  # Training: (text, label)
@@ -60,6 +62,7 @@ class DeBERTaClassifier:
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
+        self.is_fitted = True
 
     def predict(self, X_test):
         self.model.eval()
@@ -75,6 +78,21 @@ class DeBERTaClassifier:
                 batch_preds = torch.argmax(logits, dim=1).tolist()
                 preds.extend(batch_preds)
         return preds
+
+    def _create_dataloader(self, X_test, batch_size=32, shuffle=False):
+        """
+        Create a DataLoader for prediction.
+
+        Args:
+            X_test: Test texts
+            batch_size: Batch size for the dataloader
+            shuffle: Whether to shuffle the data
+
+        Returns:
+            DataLoader instance
+        """
+        dataset = TextDataset(X_test)
+        return DataLoader(dataset, batch_size=batch_size, shuffle=shuffle, collate_fn=self.collate_fn)
 
     def predict_proba(self, X_test):
         """
@@ -172,6 +190,7 @@ class DeBERTaClassifier:
         self.max_length = checkpoint['max_length']
         self.epochs = checkpoint['epochs']
         self.batch_size = checkpoint.get('batch_size', 16)
+        self.is_fitted = True
 
         print(f"Model loaded from {path}")
 
@@ -205,6 +224,7 @@ class DeBERTaClassifier:
 
         # Load classifier weights
         instance.classifier.load_state_dict(checkpoint['classifier_state_dict'])
+        instance.is_fitted = True
 
         print(f"Model loaded from {path}")
         return instance
