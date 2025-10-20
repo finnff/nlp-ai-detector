@@ -219,7 +219,20 @@ __marimo__/
 *.DS_Store
 .AppleDouble
 .LSOverride
-data/datasets
+# Ignore raw datasets but allow perplexity-enhanced versions
+# Raw datasets to ignore
+data/datasets/ai_text_detection_pile/
+data/datasets/hc3/train/
+data/datasets/hc3/dataset_dict.json
+data/datasets/daigt_v2/DAIGT_v2_train_v2_drcat_02.csv
+data/datasets/sunilthite/sunilthite_Training_Essay_Data.csv
+data/datasets/llm_detect_competition/kaggleComp_train_essays.csv
+data/datasets/ah_aitd/AHAIRD_Dataset.xlsx
+data/datasets/combined_dataset/
+
+# These will be tracked (processed datasets with perplexity)
+!data/datasets/*/*_with_perplexity.*
+!data/datasets/*/dataset_with_perplexity/
 results
 
 
@@ -233,3 +246,12 @@ results
 *.log
 *.out
 *.synctex.gz
+
+
+# too big for git
+data/datasets/combined_dataset.csv
+
+# notebook Linn is using for testing everything.
+exploration_notebook.ipynb
+# build script for the project report, since latexmk doesn't work with the acl template 
+build.sh

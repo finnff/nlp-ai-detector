@@ -40,18 +40,23 @@ pip install torch==2.7.1 torchvision==0.22.1 torchaudio==2.7.1 --index-url https
 pip install torch==2.7.1 torchvision==0.22.1 torchaudio==2.7.1 --index-url https://download.pytorch.org/whl/cpu
 
 
+#install Spacey models
+python -m spacy download en
+
+
 ```
 
 ## Usage
 1. Log into hf using Run get_datasets.py to download datasets: `python get_datasets.py`.
-2. Run feature extraction: `python extract_features.py --dataset <path> --output <path>. If no path, defaults are used. 
+2. Run feature extraction: `python extract_linguistic_features.py --dataset <path> --output <path>. If no path, defaults are used. 
 3. Train/evaluate: `python train.py --model xgboost --features all`.
 4. Analyze: `python analyze_importance.py`.
 
 
 1. Log into Hugging Face and download datasets: `python get_datasets.py`.
-2. Configure dataset_configuration.toml for dataset combination (e.g., enable sources, set total samples, portions), then combine  datasets: `python combine_dataset.py`.
-3. Configure `configuration.toml` for model settings (e.g., num_samples, enabled features, voting, feature params), then train and evaluate using: `python main.py`.
+2. (Optional) Pre-calculate perplexity values: `python preprocess_perplexity_sources.py --all`. This requires CUDA-enabled GPU but provides faster training later. Pre-calculated perplexity values are included for most datasets (~172k samples).
+3. Configure dataset_configuration.toml for dataset combination (e.g., enable sources, set total samples, portions), then combine  datasets: `python combine_dataset.py`.
+4. Configure `configuration.toml` for model settings (e.g., num_samples, enabled features, voting, feature params), then train and evaluate using: `python main.py`.
 
 ## BERT Model Training and Loading
 

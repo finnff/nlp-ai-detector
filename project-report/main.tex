@@ -65,7 +65,11 @@
 \label{sec:introduction}
 % State the specific problems you aimed to address or the questions you sought to answer. If your project was inspired by a particular paper (or papers), which motivated your interest in the problem, kindly reference them here.
 
-For this project, we wish to explore which linguistic or statistical features are most effective for distinguishing human- vs. AI-generated text. The list of features is not fully determined, but some relevant features might be: sentence structure- and complexity, punctuation and formatting, lexical diversity, perplexity and burstiness. Recent surveys indicate that hybrid approaches, combining statistical and neural methods, often outperform single-modality detectors in robustness and generalization \citep{wu-etal-2025-survey, su2024robustdetectionllmgeneratedtext}. Thus, we will evaluate individual features as well as combinations and ensembles to identify optimal hybrid configurations.
+For this project, we explore which linguistic or statistical features are most effective for distinguishing human- vs. AI-generated text. Recent surveys indicate that hybrid approaches, combining statistical and neural methods, often outperform single-modality detectors in robustness and generalization \citep{wu-etal-2025-survey, su2024robustdetectionllmgeneratedtext}. 
+
+The project approach is two-fold. First, a feature analysis is conducted to understand which classic linguistic and statistical features, e.g. sentence complexity, punctuation patterns, lexical diversity, perplexity, and part-of-speech (POS) distributions, are most discriminative. Multiple lightweight classifiers (logistic regression, random forest, XGBoost) are trained on the extracted linguistic/statistical features and their feature importance rankings are compared to identify important/robust signals. Second, the project explores how to make an AI-detector harder to fool in a real world-deployment scenario, specifically, increasing its robustness against adversarial attacks and domain shifts. This is done by combining multiple classification approaches (including neural methods like BERT and statistical methods like Naive Bayes) via majority voting. 
+
+% TODO discuss whether we should include the best of the feature-based models in this ensemble approach. Will require some work on the pipeline. 
 
 \textit{RQ: Which linguistic or statistical features  are most effective in distinguishing human- vs. AI-generated text?}
 
@@ -122,13 +126,50 @@ AH\&AITD & 12K & 50.0 & 50.0 \\
 \label{sec:method}
 % Clearly describe the method you employed to address your problem. Mention any libraries utilised, and ensure your explanation is accessible to individuals with fundamental NLP knowledge. Reference relevant literature where applicable. Additionally, mention preprocessing steps and dataset division into training and testing sets (if applicable).
 
-First the chosen features will be extracted for each entry in the datasets. Examples would be using a language model to calculate perplexity, a tokenizer to calculate lexical diversity or a POS tagger to calculate POS tag ratios. Then, a (lightweight) classifier will be trained on these features; so far logistic regression and XGBoost are candidates. To assess individual and combined efficacy, we will test features separately and explore ensembles (e.g., stacking or voting across feature subsets or classifiers). Lastly, the feature importances will be analyzed.
+The project methodology consists of two efforts to address different aspects of AI text detection: a feature-based analysis and an ensemble-based detector.
+
+\subsection{Approach 1: Feature-Based Analysis}
+\label{sec:feature-based-analysis}
+The feature-based analysis focuses on understanding which linguistic and statistical features are most informative in classifying human- vs. AI-generated text. For each text in the dataset, a set of features are extracted (section \ref{sec:feature-extraction}). These features are then used to train three lightweight classifiers: logistic regression and random forest using scikit-learn \citep{scikit-learn}, and XGBoost \citep{xgboost}.
+
+The dataset was balanced as described in section \ref{sec:dataset-balancing}, and an 80/20 train-test split was used for all models. Feature importance rankings were retrieved and compared across these three models, giving insights on which linguistic patterns are consistently important for distinguishing human- vs. AI-generated text.
+
+\subsubsection{Feature Extraction}
+\label{sec:feature-extraction}
+For each entry in the dataset, the following features were extracted using the spaCy library \citep{spacy} with the \texttt{en\_core\_web\_sm} model for all linguistic processing tasks, including tokenization, lemmatization, part-of-speech tagging, and dependency parsing.
+
+\paragraph{Lexical Features}
+Four lexical features were chosen and extracted. Average word length and word length variance to measure vocabulary complexity. Root Type-Token Ratio (RTTR), and hapax legomena ratio to measure lexical diversity.
+
+The Root Type-Token Ratio (RTTR) is a token-type ratio that accounts for document size by normalizing by the square of the document length \citep{REVIRIEGO2024100602}. It was calculated by lemmatizing the text, counting the unique types and dividing by squared text length. A hapax legomenon refers to a word (or expression) occurring only once in a context, and here measures the proportion of words that appear exactly once in a sample.
+
+\paragraph{Syntactic Features}
+Sentence-level statistics were chosen to measure sentence complexity, and include average sentence length and variance. Parse tree depth features (average, maximium and variance) were extracted to measure syntactic complexity. Parse depth is computed as the maximum number of ancestors for any token in a sentence.
+
+\paragraph{Punctuation Features}
+The ratio of punctuation marks to word count was calculated for comma, period, exclamation mark, and question mark. Additionally, the overall punctuation ratio was included.
+
+\paragraph{Part-of-Speech Features}
+POS tags were extracted using spaCy's coarse-grained POS tags (\texttt{token.pos\_}) rather than fine-grained tags (\texttt{token.tag\_}) to capture overall patterns in word class usage, fine grained tags were excluded as they may be too specific for the objective, and yield sparse data. The ratio of each POS category (noun, verb, adjective, adverb, etc.) to total tokens was calculated as well as a noun-to-verb ratio as a derived feature.
+
+\paragraph{Perplexity}
+Perplexity is defined as the inverse test set probability according to the model used for calculating the perplexity score, normalized by the length of the text \citep{jm3}. It is an evaluation of the model's ability to predict uniformly among the set of tokens in a corpus, or in other words how "surprised" the model is by the text, where a lower perplexity indicates more predictable/less surprising text for the model. Perplexity was calculated using EleutherAI's Pythia 1.4B model \citep{biderman2023pythia}, an open-source model trained on the Pile dataset \citep{pile}. The model was downloaded from Hugging Face, and run using the transformers library \citep{wolf-etal-2020-transformers}. This model was chosen for its balance between computational efficiency and generalization due to its diverse training data, which includes web text, books, and academic sources similar to the datasets of this experiment.
+
+\subsection{Approach 2: Ensemble-Based Detector}
+\label{sec:ensemble-based-detector}
+The ensemble-based detector aims to build a practical, robust detector by combining multiple classifiers via majority voting. The ensemble includes: a BERT classifier; a Naive Bayes classifier; potentially a feature-based model (TODO update after discussion!!). The ensemble works by letting each model making a prediction, then "voting", selecting the majority class. This approach increases robustness against adversarial attacks and domain shifts, as fooling the ensemble would require deceiving a majority of its components simultaneously.
+% TODO this need to be refined. And probably there will be weighting involved??
+
 
 \subsection{Evaluation}
 \label{sec:evaluation}
-The classifier(s) will be evaluated using accuracy, F1-score and AUROC. In addition, precision at different false-positive rates may be reported to mimic realistic screening use. 
 
-Depending on the classifier, feature importance will be evaluated using coefficients (for logistic regression), SHAP values \citep{shap_library} and/or permutation importance. Hybrid combinations will be benchmarked against baselines to quantify improvements in performance and robustness.
+\textbf{Classification Performance:} All classifiers are evaluated using accuracy, precision, recall, F1-score, and confusion matrices on held-out test sets, for the ensemble both the individual models and the complete ensemble performance is reported.
+% TODO update with cross-validation approach
+
+\textbf{Feature Importance Analysis:} For the feature-based analysis, we extract and compare feature importances from each model: absolute coefficient values from logistic regression (normalized to sum to 1), Gini importance from random forest, and gain-based importance from XGBoost. By ranking features across models, we identify which linguistic patterns are consistently discriminative regardless of the classification algorithm.
+
+The feature importance analysis compares three classifiers to identify robust signals that generalize across different models (linear vs. tree-based, bagging vs. boosting).
 
 \section{Experiment and Results}
 \label{sec:experiment-results}
