@@ -1,16 +1,16 @@
 
-Title = "Combined Dataset Maker"
+Title = "Combined Dataset Maker 20/10"
 # This is the configuration file for creating a mixed source dataset from 6 different sources:
 
 # Total number of samples to include in the combined dataset
 # if set to MAX, it uses all available samples from enabled sources
-total_samples = 10000
+total_samples = 172000
 
 # if true, saves the combined dataset in Apache Arrow format for efficiency, otherwise saves as csv
 use_arrow = false
 
 # if true, uses a random seed for sampling and shuffling, otherwise uses fixed seed 0
-random = true
+random = false
 
 # if true, balances each source to have equal numbers of human (0) and AI (1) generated texts (does not handle case where this limits the numbe of samples contributed by a source for now, so one mmight end up with less than total_samples in the combined dataset)
 balance_classes = true
@@ -67,5 +67,5 @@ enabled = true
 relative_portion = 0
 
 [llm_detect_competition]
-enabled = true
+enabled = false
 relative_portion = 0
