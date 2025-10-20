@@ -13,6 +13,8 @@ from features.xgboost_classifier import XGBoostClassifier
 from ensemble import Ensemble
 import argparse
 import datetime
+import sys
+import re
 
 def check_perplexity_status(dataset_path):
     """Check if dataset contains pre-computed perplexity values."""
@@ -35,16 +37,214 @@ def check_perplexity_status(dataset_path):
         print(f"⚠️  Could not check perplexity status: {e}")
         return False, None
 
+class ResultsTracker:
+    """Track and compare classifier results for final summary"""
+
+    def __init__(self):
+        self.individual_results = {}
+        self.ensemble_results = {}
+        self.best_individual = None
+
+    def add_individual_result(self, name, accuracy, report):
+        """Store individual classifier result"""
+        macro_f1, weighted_f1 = extract_f1_score(report)
+        self.individual_results[name] = {
+            'accuracy': accuracy,
+            'macro_f1': macro_f1,
+            'weighted_f1': weighted_f1,
+            'report': report
+        }
+
+    def add_ensemble_result(self, name, accuracy, report):
+        """Store ensemble result"""
+        macro_f1, weighted_f1 = extract_f1_score(report)
+        self.ensemble_results[name] = {
+            'accuracy': accuracy,
+            'macro_f1': macro_f1,
+            'weighted_f1': weighted_f1,
+            'report': report
+        }
+
+    def get_best_individual(self):
+        """Find best individual classifier by accuracy"""
+        if not self.individual_results:
+            return None
+        return max(self.individual_results.items(), key=lambda x: x[1]['accuracy'])
+
+def extract_f1_score(report_string):
+    """Extract macro and weighted F1-scores from classification report string"""
+    try:
+        lines = report_string.split('\n')
+        macro_f1 = None
+        weighted_f1 = None
+
+        for line in lines:
+            if line.strip().startswith('macro avg'):
+                parts = line.split()
+                if len(parts) >= 3:
+                    macro_f1 = float(parts[-2])  # F1-score is second to last
+            elif line.strip().startswith('weighted avg'):
+                parts = line.split()
+                if len(parts) >= 3:
+                    weighted_f1 = float(parts[-2])  # F1-score is second to last
+
+        # Fallback to 0.0 if not found
+        if macro_f1 is None:
+            macro_f1 = 0.0
+        if weighted_f1 is None:
+            weighted_f1 = 0.0
+
+        return macro_f1, weighted_f1
+    except Exception as e:
+        print(f"⚠️  Error extracting F1-scores: {e}")
+        return 0.0, 0.0
+
+def get_comparison_color(ensemble_acc, best_individual_acc):
+    """Get color code based on performance comparison"""
+    # ANSI color codes
+    GREEN = '\033[92m'   # Better than best individual
+    YELLOW = '\033[93m'  # Equal to best individual
+    RED = '\033[91m'     # Worse than best individual
+
+    # 0.1% threshold for "equal"
+    threshold = 0.001
+    if ensemble_acc > best_individual_acc + threshold:
+        return GREEN
+    elif ensemble_acc < best_individual_acc - threshold:
+        return RED
+    else:
+        return YELLOW
+
+def print_final_summary(results_tracker, output_file=None):
+    """Print color-coded final results summary"""
+    # ANSI color codes
+    GREEN = '\033[92m'   # Better than best individual
+    YELLOW = '\033[93m'  # Equal to best individual
+    RED = '\033[91m'     # Worse than best individual
+    RESET = '\033[0m'    # Reset color
+
+    # Check if terminal supports colors
+    use_colors = sys.stdout.isatty()
+
+    # Get best individual classifier
+    best_individual = results_tracker.get_best_individual()
+    if not best_individual:
+        print("No individual classifier results found.")
+        return
+
+    best_name, best_result = best_individual
+    best_accuracy = best_result['accuracy']
+
+    # Calculate max classifier name length for proper alignment
+    max_name_length = 25
+    all_names = list(results_tracker.individual_results.keys()) + list(results_tracker.ensemble_results.keys())
+    if all_names:
+        max_name_length = max(max_name_length, max(len(name) for name in all_names) + 2)
+
+    # Print header
+    header_width = max(80, max_name_length + 44)
+    print("\n" + "="*header_width)
+    print("FINAL RESULTS SUMMARY")
+    print("="*header_width)
+
+    if output_file:
+        print("="*header_width, file=output_file)
+        print("FINAL RESULTS SUMMARY", file=output_file)
+        print("="*header_width, file=output_file)
+
+    # Print table header
+    print(f"{'CLASSIFIER':<{max_name_length}} {'ACCURACY':<10} {'MACRO F1':<10} {'WEIGHTED F1':<12}")
+    print("=" * (max_name_length + 44))
+
+    if output_file:
+        print(f"{'CLASSIFIER':<{max_name_length}} {'ACCURACY':<10} {'MACRO F1':<10} {'WEIGHTED F1':<12}", file=output_file)
+        print("=" * (max_name_length + 44), file=output_file)
+
+    # Print individual classifier results
+    for name, result in results_tracker.individual_results.items():
+        print(f"{name:<{max_name_length}} {result['accuracy']:<10.4f} {result['macro_f1']:<10.4f} {result['weighted_f1']:<12.4f}")
+        if output_file:
+            print(f"{name:<{max_name_length}} {result['accuracy']:<10.4f} {result['macro_f1']:<10.4f} {result['weighted_f1']:<12.4f}", file=output_file)
+
+    # Print separator
+    print("-" * (max_name_length + 44))
+    if output_file:
+        print("-" * (max_name_length + 44), file=output_file)
+
+    # Print ensemble results with color coding
+    for name, result in results_tracker.ensemble_results.items():
+        if use_colors:
+            color = get_comparison_color(result['accuracy'], best_accuracy)
+            print(f"{color}{name:<{max_name_length}} {result['accuracy']:<10.4f} {result['macro_f1']:<10.4f} {result['weighted_f1']:<12.4f}{RESET}")
+        else:
+            # Add performance indicators for non-color output
+            diff = result['accuracy'] - best_accuracy
+            if diff > 0.001:
+                indicator = "▲"
+            elif diff < -0.001:
+                indicator = "▼"
+            else:
+                indicator = "►"
+            print(f"{indicator} {name:<{max_name_length-1}} {result['accuracy']:<10.4f} {result['macro_f1']:<10.4f} {result['weighted_f1']:<12.4f}")
+
+        if output_file:
+            # Add performance indicators to file output
+            diff = result['accuracy'] - best_accuracy
+            if diff > 0.001:
+                indicator = "▲"
+            elif diff < -0.001:
+                indicator = "▼"
+            else:
+                indicator = "►"
+            print(f"{indicator} {name:<{max_name_length-1}} {result['accuracy']:<10.4f} {result['macro_f1']:<10.4f} {result['weighted_f1']:<12.4f}", file=output_file)
+
+    print("=" * (max_name_length + 44))
+    if output_file:
+        print("=" * (max_name_length + 44), file=output_file)
+
+    print("="*80)
+    if output_file:
+        print("="*80, file=output_file)
+
+    # Print performance summary
+    print(f"\nPerformance Summary:")
+    print(f"• Best Individual: {best_name} ({best_accuracy:.4f} accuracy)")
+
+    for name, result in results_tracker.ensemble_results.items():
+        diff_pct = (result['accuracy'] - best_accuracy) * 100
+        if diff_pct > 0.1:
+            print(f"• {name}: ▲ {diff_pct:+.2f}% better than best individual")
+        elif diff_pct < -0.1:
+            print(f"• {name}: ▼ {diff_pct:+.2f}% worse than best individual")
+        else:
+            print(f"• {name}: ► {diff_pct:+.2f}% (equal to best individual)")
+
+    if output_file:
+        print(f"\nPerformance Summary:", file=output_file)
+        print(f"• Best Individual: {best_name} ({best_accuracy:.4f} accuracy)", file=output_file)
+
+        for name, result in results_tracker.ensemble_results.items():
+            diff_pct = (result['accuracy'] - best_accuracy) * 100
+            if diff_pct > 0.1:
+                print(f"• {name}: ▲ {diff_pct:+.2f}% better than best individual", file=output_file)
+            elif diff_pct < -0.1:
+                print(f"• {name}: ▼ {diff_pct:+.2f}% worse than best individual", file=output_file)
+            else:
+                print(f"• {name}: ► {diff_pct:+.2f}% (equal to best individual)", file=output_file)
+
 def main(config_path='configuration.toml'):
     # Load configuration
     with open(config_path, 'rb') as f_config:
         config = tomllib.load(f_config)
-    
+
     # Create output directory and file
     os.makedirs('results', exist_ok=True)
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     output_file = f"results/results_{timestamp}.txt"
     f = open(output_file, 'w')
+
+    # Initialize results tracker
+    results_tracker = ResultsTracker()
     
     # Define features dictionary
     ## Define features dictionary
@@ -175,8 +375,8 @@ def main(config_path='configuration.toml'):
                 need_extraction = True
 
         if need_extraction:
-            import extract_features
-            extract_features.main()
+            import extract_linguistic_features
+            extract_linguistic_features.main()
             msg = "✅ Feature extraction completed!"
             print(msg)
             print(msg, file=f)
@@ -461,6 +661,8 @@ def main(config_path='configuration.toml'):
                     if X_test_feat is not None:
                         y_pred_feat = clf.predict(X_test_feat)
                         predictions[feat] = y_pred_feat
+                        accuracy_feat, report_feat = clf.evaluate(y_test, y_pred_feat)
+                        trained_clfs[feat] = clf
                     else:
                         msg = "⚠️  No test features available for XGBoost"
                         print(msg)
@@ -472,6 +674,9 @@ def main(config_path='configuration.toml'):
                     predictions[feat] = y_pred_feat
                     accuracy_feat, report_feat = clf.evaluate(y_test, y_pred_feat)
                     trained_clfs[feat] = clf
+
+            # Store result in tracker
+            results_tracker.add_individual_result(feat, accuracy_feat, report_feat)
 
             msg = f"Accuracy: {accuracy_feat:.4f}"
             print(msg)
@@ -495,16 +700,59 @@ def main(config_path='configuration.toml'):
 
     # Ensemble
     voters = [feat for feat in trained_clfs if config['features'][feat]['allow_voting']]
+    msg = f"\n🔗 Ensemble Setup: Found {len(voters)} voting classifiers: {voters}"
+    print(msg)
+    print(msg, file=f)
     if len(voters) > 1:
         methods = config.get('ensemble', {}).get('method', ['voting'])
         if isinstance(methods, str):
             methods = [methods]
         stacking_estimator = config.get('ensemble', {}).get('stacking_estimator', 'LogisticRegression')
+        show_progress = config.get('ensemble', {}).get('show_progress', True)
+
+        # Create single ensemble with all methods to enable caching across methods
+        ensemble = Ensemble({feat: trained_clfs[feat] for feat in voters}, method=methods, stacking_estimator=stacking_estimator, disable_progress=not show_progress)
+
+        # Check if we have XGBoost features available
+        has_features = X_train_feat is not None and X_test_feat is not None
+
+        # Fit ensemble with appropriate data (only needed for stacking)
+        if 'stacking' in methods:
+            if has_features:
+                ensemble.fit(X_train, y_train, X_features=X_train_feat)
+                msg = f"🔗 Ensemble fitted with text + features for all methods"
+            else:
+                ensemble.fit(X_train, y_train)
+                msg = f"🔗 Ensemble fitted with text only for all methods"
+            print(msg)
+            print(msg, file=f)
+
+        # Get all predictions once and reuse for all methods
+        if has_features:
+            all_predictions = ensemble.predict_all_methods(X_test, X_features=X_test_feat)
+        else:
+            all_predictions = ensemble.predict_all_methods(X_test)
+
+        # Process each method using cached predictions
         for method in methods:
-            ensemble = Ensemble({feat: trained_clfs[feat] for feat in voters}, method=method, stacking_estimator=stacking_estimator)
-            ensemble.fit(X_train, y_train)
-            y_pred_ensemble = ensemble.predict(X_test)
+            if method in all_predictions:
+                y_pred_ensemble = all_predictions[method]
+            else:
+                # Fallback to individual method prediction if needed
+                ensemble.method = method
+                if has_features:
+                    y_pred_ensemble = ensemble.predict(X_test, X_features=X_test_feat)
+                else:
+                    y_pred_ensemble = ensemble.predict(X_test)
+
             accuracy_ensemble, report_ensemble = ensemble.evaluate(y_test, y_pred_ensemble)
+
+            # Store ensemble result in tracker
+            if method == 'stacking':
+                ensemble_name = f"Ensemble ({method.capitalize()} with {stacking_estimator})"
+            else:
+                ensemble_name = f"Ensemble ({method.capitalize()})"
+            results_tracker.add_ensemble_result(ensemble_name, accuracy_ensemble, report_ensemble)
 
             if method == 'stacking':
                 msg = f"\nEnsemble ({method.capitalize()} with {stacking_estimator}):"
@@ -522,6 +770,9 @@ def main(config_path='configuration.toml'):
             print(msg, file=f)
             print(report_ensemble)
             print(report_ensemble, file=f)
+
+    # Print final results summary
+    print_final_summary(results_tracker, f)
 
     f.close()
     print(f"\nResults saved to {output_file}")
