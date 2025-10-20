@@ -54,8 +54,9 @@ python -m spacy download en
 
 
 1. Log into Hugging Face and download datasets: `python get_datasets.py`.
-2. Configure dataset_configuration.toml for dataset combination (e.g., enable sources, set total samples, portions), then combine  datasets: `python combine_dataset.py`.
-3. Configure `configuration.toml` for model settings (e.g., num_samples, enabled features, voting, feature params), then train and evaluate using: `python main.py`.
+2. (Optional) Pre-calculate perplexity values: `python preprocess_perplexity_sources.py --all`. This requires CUDA-enabled GPU but provides faster training later. Pre-calculated perplexity values are included for most datasets (~172k samples).
+3. Configure dataset_configuration.toml for dataset combination (e.g., enable sources, set total samples, portions), then combine  datasets: `python combine_dataset.py`.
+4. Configure `configuration.toml` for model settings (e.g., num_samples, enabled features, voting, feature params), then train and evaluate using: `python main.py`.
 
 ## BERT Model Training and Loading
 
