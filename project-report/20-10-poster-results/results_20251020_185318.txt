@@ -1,0 +1,245 @@
+Using CSV version: CSV is Newer (63 mins old vs 8635 mins old)
+Loaded dataset with 112848 samples
+🧠 Dataset contains pre-computed perplexity values!
+   Perplexity range: 1.07 - 4474.95 (mean: 19.48)
+✅ Found existing features file (112848 samples)
+📈 Ready features: 44 linguistic features
+🧠 Includes pre-computed perplexity values
+Using all 112848 samples (shuffled)
+Train set: 90278 samples
+Test set: 22570 samples
+🔧 Using all 112848 XGBoost features (with HuggingFace shuffle)
+🔧 XGBoost feature splits created: 90278 train, 22570 test samples
+
+Enabled Features:
+- Naive Bayes: params={'alpha': 1.0}, allow_voting=True
+- Random Classifier: params={}, allow_voting=False
+- NB No Stopwords: params={'alpha': 1.0}, allow_voting=True
+- BERT Classifier: params={'model_name': 'google-bert/bert-base-uncased', 'max_length': 128, 'epochs': 3, 'lr': 0.005, 'batch_size': 64}, allow_voting=True, use_cv=False
+- DeBERTa Classifier: params={'model_name': 'microsoft/deberta-v3-base', 'max_length': 128, 'epochs': 3, 'lr': 0.005, 'batch_size': 64}, allow_voting=True
+- XGBoost Classifier: params={'features_file': 'data/features/extracted_features.csv', 'n_estimators': 100, 'max_depth': 6, 'learning_rate': 0.1}, allow_voting=True
+
+Naive Bayes:
+Model trained
+Accuracy: 0.8601
+F1 Score (Macro): 0.8601
+F1 Score (Weighted): 0.8600
+AUROC: 0.9253
+
+Classification Report:
+               precision    recall  f1-score   support
+
+Human Written     0.8439    0.8835    0.8632     11278
+ AI Generated     0.8779    0.8368    0.8569     11292
+
+     accuracy                         0.8601     22570
+    macro avg     0.8609    0.8601    0.8601     22570
+ weighted avg     0.8609    0.8601    0.8600     22570
+
+
+Random Classifier:
+Model trained
+Accuracy: 0.5008
+F1 Score (Macro): 0.5008
+F1 Score (Weighted): 0.5008
+AUROC: 0.5000
+
+Classification Report:
+               precision    recall  f1-score   support
+
+Human Written     0.5005    0.5002    0.5003     11278
+ AI Generated     0.5011    0.5014    0.5013     11292
+
+     accuracy                         0.5008     22570
+    macro avg     0.5008    0.5008    0.5008     22570
+ weighted avg     0.5008    0.5008    0.5008     22570
+
+
+NB No Stopwords:
+Model trained
+Accuracy: 0.8557
+F1 Score (Macro): 0.8557
+F1 Score (Weighted): 0.8557
+AUROC: 0.9270
+
+Classification Report:
+               precision    recall  f1-score   support
+
+Human Written     0.8497    0.8640    0.8568     11278
+ AI Generated     0.8618    0.8474    0.8546     11292
+
+     accuracy                         0.8557     22570
+    macro avg     0.8558    0.8557    0.8557     22570
+ weighted avg     0.8558    0.8557    0.8557     22570
+
+
+BERT Classifier:
+Loaded pretrained model from models/bert_classifier_172402.pt
+Accuracy: 0.9133
+F1 Score (Macro): 0.9133
+F1 Score (Weighted): 0.9133
+AUROC: 0.9715
+
+Classification Report:
+               precision    recall  f1-score   support
+
+Human Written     0.9103    0.9169    0.9136     11278
+ AI Generated     0.9164    0.9098    0.9131     11292
+
+     accuracy                         0.9133     22570
+    macro avg     0.9134    0.9133    0.9133     22570
+ weighted avg     0.9134    0.9133    0.9133     22570
+
+
+DeBERTa Classifier:
+Loaded pretrained model from models/deberta_classifier_172402.pt
+Accuracy: 0.9424
+F1 Score (Macro): 0.9424
+F1 Score (Weighted): 0.9424
+AUROC: 0.9879
+
+Classification Report:
+               precision    recall  f1-score   support
+
+Human Written     0.9575    0.9258    0.9414     11278
+ AI Generated     0.9283    0.9590    0.9434     11292
+
+     accuracy                         0.9424     22570
+    macro avg     0.9429    0.9424    0.9424     22570
+ weighted avg     0.9429    0.9424    0.9424     22570
+
+
+XGBoost Classifier:
+Model trained (using pre-extracted features)
+Accuracy: 0.9762
+F1 Score (Macro): 0.9762
+F1 Score (Weighted): 0.9762
+AUROC: 0.9968
+
+Classification Report:
+              precision    recall  f1-score   support
+
+       Human     0.9704    0.9823    0.9763     11278
+AI Generated     0.9821    0.9701    0.9760     11292
+
+    accuracy                         0.9762     22570
+   macro avg     0.9762    0.9762    0.9762     22570
+weighted avg     0.9762    0.9762    0.9762     22570
+
+
+Feature Importances:
+                        feature  importance
+43                   perplexity    0.400926
+3          hapax_legomena_ratio    0.100920
+2    rttr_root_type_token_ratio    0.097470
+33   sentence_length_burstiness    0.025218
+23                pos_ratio_num    0.022893
+14                pos_ratio_adj    0.021237
+30               pos_ratio_verb    0.020018
+31                  pos_ratio_x    0.018291
+35  sentence_length_range_ratio    0.018172
+26              pos_ratio_propn    0.016469
+20                pos_ratio_det    0.015719
+11       exclamation_mark_ratio    0.015388
+37  adjacent_sentence_variation    0.013760
+0           average_word_length    0.013227
+21               pos_ratio_intj    0.013169
+1          word_length_variance    0.012568
+29                pos_ratio_sym    0.011489
+41       word_length_burstiness    0.011119
+6           average_parse_depth    0.010665
+19              pos_ratio_cconj    0.010363
+17                pos_ratio_aux    0.009625
+32           noun_to_verb_ratio    0.009026
+27              pos_ratio_punct    0.008951
+12          question_mark_ratio    0.008656
+13         punctuation_per_word    0.008092
+22               pos_ratio_noun    0.007746
+28              pos_ratio_sconj    0.007674
+9                   comma_ratio    0.007159
+24               pos_ratio_part    0.007083
+40         short_sentence_ratio    0.007033
+16                pos_ratio_adv    0.005955
+15                pos_ratio_adp    0.005703
+10                 period_ratio    0.005626
+8          parse_depth_variance    0.005551
+36          sentence_length_iqr    0.005520
+42     clause_length_burstiness    0.005224
+25               pos_ratio_pron    0.005177
+38     position_burstiness_diff    0.003890
+7           maximum_parse_depth    0.003663
+39          long_sentence_ratio    0.003565
+5      sentence_length_variance    0.000000
+4       average_sentence_length    0.000000
+18               pos_ratio_conj    0.000000
+34           sentence_length_cv    0.000000
+
+🔗 Ensemble Setup: Found 5 voting classifiers: ['nb_classifier', 'nb_no_stopwords', 'bert_classifier', 'deberta_classifier', 'xgboost_classifier']
+🔗 Ensemble fitted with text + features for all methods
+
+Ensemble (Voting):
+Accuracy: 0.9558
+F1 Score (Macro): 0.9558
+F1 Score (Weighted): 0.9558
+F1 Score (Human): 0.9560
+F1 Score (AI Generated): 0.9555
+
+Classification Report:
+               precision    recall  f1-score   support
+
+Human Written     0.9499    0.9623    0.9560     11278
+ AI Generated     0.9619    0.9493    0.9555     11292
+
+     accuracy                         0.9558     22570
+    macro avg     0.9559    0.9558    0.9558     22570
+ weighted avg     0.9559    0.9558    0.9558     22570
+
+
+Ensemble (Stacking with XGBoost):
+Accuracy: 0.9762
+F1 Score (Macro): 0.9762
+F1 Score (Weighted): 0.9762
+F1 Score (Human): 0.9763
+F1 Score (AI Generated): 0.9760
+
+Classification Report:
+               precision    recall  f1-score   support
+
+Human Written     0.9704    0.9823    0.9763     11278
+ AI Generated     0.9821    0.9701    0.9760     11292
+
+     accuracy                         0.9762     22570
+    macro avg     0.9762    0.9762    0.9762     22570
+ weighted avg     0.9762    0.9762    0.9762     22570
+
+
+================================================================================
+AUROC PERFORMANCE ANALYSIS
+================================================================================
+• Best Individual AUROC: xgboost_classifier (0.9968)
+• Best Overall AUROC: xgboost_classifier (0.9968)
+• All classifiers perform significantly better than random (0.5000)
+• Best classifier shows 99.4% improvement over random
+
+📈 ROC Curve Diagram: results/roc_curves_20251020_185318.png
+================================================================================
+FINAL RESULTS SUMMARY
+================================================================================
+CLASSIFIER                         ACCURACY   MACRO F1   WEIGHTED F1  AUROC   
+======================================================================================
+nb_classifier                      0.8601     0.8601     0.8600       0.9253  
+random_choice                      0.5008     0.5008     0.5008       0.5000  
+nb_no_stopwords                    0.8557     0.8557     0.8557       0.9270  
+bert_classifier                    0.9133     0.9133     0.9133       0.9715  
+deberta_classifier                 0.9424     0.9424     0.9424       0.9879  
+xgboost_classifier                 0.9762     0.9762     0.9762       0.9968  
+--------------------------------------------------------------------------------------
+▼ Ensemble (Voting)                 0.9558     0.9558     0.9558       N/A     
+► Ensemble (Stacking with XGBoost)  0.9762     0.9762     0.9762       N/A     
+======================================================================================
+================================================================================
+
+Performance Summary:
+• Best Individual: xgboost_classifier (0.9762 accuracy)
+• Ensemble (Voting): ▼ -2.04% worse than best individual
+• Ensemble (Stacking with XGBoost): ► +0.00% (equal to best individual)
