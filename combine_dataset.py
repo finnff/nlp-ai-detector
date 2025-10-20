@@ -36,14 +36,98 @@ daigt_v2_path = os.path.join(datasets_dir, 'daigt_v2', 'DAIGT_v2_train_v2_drcat_
 kaggle_comp_path = os.path.join(datasets_dir, 'llm_detect_competition', 'kaggleComp_train_essays.csv')
 ah_aitd_path = os.path.join(datasets_dir, 'ah_aitd', 'AHAIRD_Dataset.xlsx')
 
-# Map source names to loaders
+def standardize_dataset(df, source_name):
+    """Standardize dataset while preserving perplexity and other important columns."""
+    # Always keep text and generated
+    columns_to_keep = ['text', 'generated']
+
+    # Add perplexity if present
+    if 'perplexity' in df.columns:
+        columns_to_keep.append('perplexity')
+        non_nan = df['perplexity'].notna().sum()
+        print(f"   🧠 Preserved perplexity for {non_nan}/{len(df)} samples")
+
+    # Keep only available columns
+    available_columns = [col for col in columns_to_keep if col in df.columns]
+
+    if 'perplexity' in available_columns:
+        print(f"✅ Standardized {source_name}: kept columns {available_columns}")
+    else:
+        print(f"📄 Standardized {source_name}: kept columns {available_columns} (no perplexity)")
+
+    return df[available_columns]
+
+def load_with_fallback(perplexity_path, original_path, file_type='arrow'):
+    """Load dataset from perplexity-enhanced version if available, otherwise fallback to original."""
+    try:
+        if file_type == 'arrow':
+            if os.path.exists(perplexity_path):
+                print(f"🧠 Using perplexity-enhanced dataset: {perplexity_path}")
+                dataset = load_from_disk(perplexity_path, keep_in_memory=True)
+                return dataset['train'].to_pandas() if 'train' in dataset else dataset.to_pandas()
+            elif os.path.exists(original_path):
+                print(f"📄 Using original dataset: {original_path}")
+                dataset = load_from_disk(original_path, keep_in_memory=True)
+                return dataset['train'].to_pandas() if 'train' in dataset else dataset.to_pandas()
+        elif file_type == 'csv':
+            if os.path.exists(perplexity_path):
+                print(f"🧠 Using perplexity-enhanced dataset: {perplexity_path}")
+                return pd.read_csv(perplexity_path)
+            elif os.path.exists(original_path):
+                print(f"📄 Using original dataset: {original_path}")
+                return pd.read_csv(original_path)
+        elif file_type == 'excel':
+            if os.path.exists(perplexity_path):
+                print(f"🧠 Using perplexity-enhanced dataset: {perplexity_path}")
+                return pd.read_csv(perplexity_path)  # Enhanced version saved as CSV
+            elif os.path.exists(original_path):
+                print(f"📄 Using original dataset: {original_path}")
+                return pd.read_excel(original_path)
+    except Exception as e:
+        print(f"❌ Error loading dataset: {e}")
+        print(f"📄 Falling back to original dataset: {original_path}")
+        if file_type == 'arrow':
+            dataset = load_from_disk(original_path, keep_in_memory=True)
+            return dataset['train'].to_pandas() if 'train' in dataset else dataset.to_pandas()
+        elif file_type == 'csv':
+            return pd.read_csv(original_path)
+        elif file_type == 'excel':
+            return pd.read_excel(original_path)
+
+    raise FileNotFoundError(f"Neither perplexity-enhanced nor original dataset found: {perplexity_path}, {original_path}")
+
+# Map source names to loaders with fallback support
 source_loaders = {
-    'ai_text_detection_pile': lambda: (load_from_disk(pile_path, keep_in_memory=True)['train'].to_pandas() if 'train' in load_from_disk(pile_path, keep_in_memory=True) else load_from_disk(pile_path, keep_in_memory=True).to_pandas()),
-    'hc3': lambda: (load_from_disk(hc3_path, keep_in_memory=True)['train'].to_pandas() if 'train' in load_from_disk(hc3_path, keep_in_memory=True) else load_from_disk(hc3_path, keep_in_memory=True).to_pandas()),
-    'daigt_v2': lambda: pd.read_csv(daigt_v2_path),
-    'sunilthite': lambda: pd.read_csv(sunilthite_path),
-    'ah_aitd': lambda: pd.read_excel(ah_aitd_path),
-    'llm_detect_competition': lambda: pd.read_csv(kaggle_comp_path),
+    'ai_text_detection_pile': lambda: load_with_fallback(
+        os.path.join(datasets_dir, 'ai_text_detection_pile', 'dataset_with_perplexity'),
+        pile_path,
+        'arrow'
+    ),
+    'hc3': lambda: load_with_fallback(
+        os.path.join(datasets_dir, 'hc3', 'dataset_with_perplexity'),
+        hc3_path,
+        'arrow'
+    ),
+    'daigt_v2': lambda: load_with_fallback(
+        daigt_v2_path.replace('.csv', '_with_perplexity.csv'),
+        daigt_v2_path,
+        'csv'
+    ),
+    'sunilthite': lambda: load_with_fallback(
+        sunilthite_path.replace('.csv', '_with_perplexity.csv'),
+        sunilthite_path,
+        'csv'
+    ),
+    'ah_aitd': lambda: load_with_fallback(
+        ah_aitd_path.replace('.xlsx', '_with_perplexity.csv'),
+        ah_aitd_path,
+        'excel'
+    ),
+    'llm_detect_competition': lambda: load_with_fallback(
+        kaggle_comp_path.replace('.csv', '_with_perplexity.csv'),
+        kaggle_comp_path,
+        'csv'
+    ),
 }
 
 # Get enabled sources
@@ -60,7 +144,7 @@ for key in enabled_sources:
 # AI Text Detection Pile
 if 'ai_text_detection_pile' in source_dfs:
     source_dfs['ai_text_detection_pile']['generated'] = source_dfs['ai_text_detection_pile']['source'].apply(lambda x: 0 if x == 'human' else 1)
-    source_dfs['ai_text_detection_pile'] = source_dfs['ai_text_detection_pile'][['text', 'generated']]
+    source_dfs['ai_text_detection_pile'] = standardize_dataset(source_dfs['ai_text_detection_pile'], 'ai_text_detection_pile')
 
 # HC3 - Filter and Flatten
 if 'hc3' in source_dfs:
@@ -75,23 +159,25 @@ if 'hc3' in source_dfs:
             if ans:  # Skip empty
                 rows.append({'text': ans, 'generated': 1})
     source_dfs['hc3'] = pd.DataFrame(rows)  # Overwrite with flat df
+    source_dfs['hc3'] = standardize_dataset(source_dfs['hc3'], 'hc3')
 
 # sunilthite
 if 'sunilthite' in source_dfs:
-    source_dfs['sunilthite'] = source_dfs['sunilthite'][['text', 'generated']]
+    source_dfs['sunilthite'] = standardize_dataset(source_dfs['sunilthite'], 'sunilthite')
 
 # DAIGT V2
 if 'daigt_v2' in source_dfs:
-    source_dfs['daigt_v2'] = source_dfs['daigt_v2'][['text', 'label']].rename(columns={'label': 'generated'})
+    source_dfs['daigt_v2'] = source_dfs['daigt_v2'].rename(columns={'label': 'generated'})
+    source_dfs['daigt_v2'] = standardize_dataset(source_dfs['daigt_v2'], 'daigt_v2')
 
 # Kaggle Competition
 if 'llm_detect_competition' in source_dfs:
-    source_dfs['llm_detect_competition'] = source_dfs['llm_detect_competition'][['text', 'generated']]
+    source_dfs['llm_detect_competition'] = standardize_dataset(source_dfs['llm_detect_competition'], 'llm_detect_competition')
 
 # AH&AITD
 if 'ah_aitd' in source_dfs:
     source_dfs['ah_aitd']['generated'] = source_dfs['ah_aitd']['label_name'].apply(lambda x: 0 if 'human' in x.lower() else 1)
-    source_dfs['ah_aitd'] = source_dfs['ah_aitd'][['text', 'generated']]
+    source_dfs['ah_aitd'] = standardize_dataset(source_dfs['ah_aitd'], 'ah_aitd')
 
 # Handle relative portions
 portions = {}
@@ -166,6 +252,16 @@ contributions = df['origin_source'].value_counts()
 
 # Drop origin_source
 df = df.drop(columns=['origin_source'])
+
+# Debug: Show final dataset info
+print(f"\n📊 Final combined dataset info:")
+print(f"   Shape: {df.shape}")
+print(f"   Columns: {list(df.columns)}")
+if 'perplexity' in df.columns:
+    non_nan_ppl = df['perplexity'].notna().sum()
+    print(f"   🧠 Perplexity available for {non_nan_ppl}/{len(df)} samples ({non_nan_ppl/len(df)*100:.1f}%)")
+else:
+    print(f"   ⚠️  No perplexity column found")
 
 # Save based on config
 save_path = os.path.join(datasets_dir, 'combined_dataset')

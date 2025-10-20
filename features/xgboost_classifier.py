@@ -3,6 +3,7 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, classification_report
 import xgboost as xgb
+import os
 
 class XGBoostClassifier:
     def __init__(self, features_file='data/features/extracted_features_processed.csv', n_estimators=100, max_depth=6, learning_rate=0.1, random_state=42, test_size=0.2):
@@ -13,15 +14,15 @@ class XGBoostClassifier:
         self.random_state = random_state
         self.test_size = test_size
         self.model = None
+        self.is_fitted = False
 
     def fit(self, X_train, y_train):
-        # Load features and split
-        df = pd.read_csv(self.features_file)
-        X = df.drop('generated', axis=1)
-        y = df['generated']
-        self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(
-            X, y, test_size=self.test_size, random_state=self.random_state, stratify=y
-        )
+        """
+        XGBoost works with pre-extracted features passed directly from main.py.
+        No need to load features file or create splits - main.py handles this.
+        """
+        print(f"✅ Training XGBoost on {len(X_train)} feature samples")
+
         self.model = xgb.XGBClassifier(
             n_estimators=self.n_estimators,
             max_depth=self.max_depth,
@@ -29,12 +30,45 @@ class XGBoostClassifier:
             random_state=self.random_state,
             eval_metric='logloss'
         )
-        self.model.fit(self.X_train, self.y_train)
+        self.model.fit(X_train, y_train)
+        self.is_fitted = True
 
     def predict(self, X_test):
-        return self.model.predict(self.X_test)
+        """
+        Make predictions on pre-extracted features from main.py.
+        Simple and efficient - no feature extraction needed.
+        """
+        if not self.is_fitted:
+            raise ValueError("Model must be fitted before prediction")
+
+        predictions = self.model.predict(X_test)
+        return predictions.tolist()
+
+    def get_feature_importances(self):
+        """
+        Return feature importances as a formatted DataFrame.
+        """
+        if not self.is_fitted or not hasattr(self.model, 'feature_importances_'):
+            return None
+
+        try:
+            # Load feature names from the features file
+            df = pd.read_csv(self.features_file)
+            feature_names = df.drop('generated', axis=1).columns
+
+            importances = self.model.feature_importances_
+
+            importance_df = pd.DataFrame({
+                'feature': feature_names,
+                'importance': importances
+            }).sort_values('importance', ascending=False)
+
+            return importance_df
+        except Exception as e:
+            print(f"⚠️  Could not load feature importances: {e}")
+            return None
 
     def evaluate(self, y_test, y_pred):
-        accuracy = accuracy_score(self.y_test, y_pred)
-        report = classification_report(self.y_test, y_pred, target_names=['Human', 'AI Generated'])
+        accuracy = accuracy_score(y_test, y_pred)
+        report = classification_report(y_test, y_pred, target_names=['Human', 'AI Generated'])
         return accuracy, report

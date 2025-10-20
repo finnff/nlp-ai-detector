@@ -13,6 +13,27 @@ from features.xgboost_classifier import XGBoostClassifier
 import argparse
 import datetime
 
+def check_perplexity_status(dataset_path):
+    """Check if dataset contains pre-computed perplexity values."""
+    try:
+        if dataset_path.endswith('.csv'):
+            df = pd.read_csv(dataset_path)
+        else:
+            # Handle Arrow format
+            from datasets import load_from_disk
+            dataset = load_from_disk(dataset_path)
+            df = dataset['train'].to_pandas() if 'train' in dataset else dataset.to_pandas()
+
+        has_perplexity = 'perplexity' in df.columns
+        if has_perplexity:
+            ppl_stats = df['perplexity'].describe()
+            return True, ppl_stats
+        else:
+            return False, None
+    except Exception as e:
+        print(f"⚠️  Could not check perplexity status: {e}")
+        return False, None
+
 def main(config_path='configuration.toml'):
     # Load configuration
     with open(config_path, 'rb') as f_config:
@@ -87,34 +108,128 @@ def main(config_path='configuration.toml'):
     print(msg)
     print(msg, file=f)
 
+    # Check perplexity status
+    dataset_path = csv_path if not use_arrow else arrow_path
+    has_perplexity, ppl_stats = check_perplexity_status(dataset_path)
+
+    if has_perplexity:
+        msg = f"🧠 Dataset contains pre-computed perplexity values!"
+        print(msg)
+        print(msg, file=f)
+        msg = f"   Perplexity range: {ppl_stats['min']:.2f} - {ppl_stats['max']:.2f} (mean: {ppl_stats['mean']:.2f})"
+        print(msg)
+        print(msg, file=f)
+    else:
+        msg = f"⚠️  Dataset does not contain pre-computed perplexity values"
+        print(msg)
+        print(msg, file=f)
+        msg = f"   Perplexity will be calculated during feature extraction (slower)"
+        print(msg)
+        print(msg, file=f)
+
     # Extract features if enabled and not exist
     if config.get('extract_features', {}).get('enabled', False):
         features_file = 'data/features/extracted_features.csv'
+        processed_file = 'data/features/extracted_features_processed.csv'
+
+        # Check if we need to extract features
+        need_extraction = False
+        need_preprocessing = False
+
         if not os.path.exists(features_file):
-            msg = "Features file not found, extracting features..."
+            need_extraction = True
+            msg = "📊 Extracting linguistic features (this may take a few minutes)..."
             print(msg)
             print(msg, file=f)
+        else:
+            # Check if features match dataset size
+            try:
+                features_df = pd.read_csv(features_file)
+                if len(features_df) != len(ds):
+                    msg = f"⚠️  Features file length mismatch (dataset: {len(ds)}, features: {len(features_df)})"
+                    print(msg)
+                    print(msg, file=f)
+                    msg = "Regenerating features to match dataset..."
+                    print(msg)
+                    print(msg, file=f)
+                    need_extraction = True
+                    # Remove old features file to ensure clean regeneration
+                    os.remove(features_file)
+                    print(f"🗑️  Removed old features file: {features_file}")
+                else:
+                    msg = f"✅ Found existing features file ({len(features_df)} samples)"
+                    print(msg)
+                    print(msg, file=f)
+
+                    # Also check if perplexity is in the features
+                    if 'perplexity' not in features_df.columns and has_perplexity:
+                        msg = f"⚠️  Dataset has perplexity but features don't - regenerating..."
+                        print(msg)
+                        print(msg, file=f)
+                        need_extraction = True
+                        os.remove(features_file)
+                        print(f"🗑️  Removed features file missing perplexity: {features_file}")
+            except Exception as e:
+                msg = f"⚠️  Error reading features file: {e}"
+                print(msg)
+                print(msg, file=f)
+                need_extraction = True
+
+        if need_extraction:
             import extract_features
             extract_features.main()
-            msg = "Features extracted."
+            msg = "✅ Feature extraction completed!"
             print(msg)
             print(msg, file=f)
 
-    # Preprocess features if enabled
-    if config.get('preprocess_features', {}).get('enabled', False):
-        processed_file = 'data/features/extracted_features_processed.csv'
-        if not os.path.exists(processed_file):
-            msg = "Processed features file not found, preprocessing features..."
-            print(msg)
-            print(msg, file=f)
-            import subprocess
-            result = subprocess.run(['python', 'preprocess_features.py'], capture_output=True, text=True)
-            print(result.stdout)
-            if result.stderr:
-                print(result.stderr)
-            msg = "Features preprocessed."
-            print(msg)
-            print(msg, file=f)
+        # Check preprocessing
+        if config.get('preprocess_features', {}).get('enabled', False):
+            if not os.path.exists(processed_file):
+                need_preprocessing = True
+                msg = "🔄 Preprocessing features for classifiers..."
+                print(msg)
+                print(msg, file=f)
+            else:
+                msg = "✅ Found preprocessed features file"
+                print(msg)
+                print(msg, file=f)
+
+            if need_preprocessing:
+                import subprocess
+                result = subprocess.run(['python', 'preprocess_features.py'], capture_output=True, text=True)
+                if result.stdout:
+                    print(result.stdout)
+                if result.stderr:
+                    print(f"⚠️  Preprocessing warnings: {result.stderr}")
+                msg = "✅ Feature preprocessing completed!"
+                print(msg)
+                print(msg, file=f)
+
+        # Final feature summary
+        if os.path.exists(features_file):
+            try:
+                features_df = pd.read_csv(features_file)
+                feature_count = len(features_df.columns) - 1  # Exclude 'generated' column
+                has_perplexity_feature = 'perplexity' in features_df.columns
+
+                msg = f"📈 Ready features: {feature_count} linguistic features"
+                print(msg)
+                print(msg, file=f)
+
+                if has_perplexity_feature:
+                    msg = f"🧠 Includes pre-computed perplexity values"
+                    print(msg)
+                    print(msg, file=f)
+                else:
+                    msg = f"⚠️  Missing perplexity values - XGBoost performance may be limited"
+                    print(msg)
+                    print(msg, file=f)
+            except Exception as e:
+                msg = f"⚠️  Could not summarize features: {e}"
+                print(msg)
+                print(msg, file=f)
+
+    # Feature preprocessing already handled above
 
     # Limit samples if specified
     if config['num_samples'] > 0:
@@ -129,18 +244,62 @@ def main(config_path='configuration.toml'):
 
     # Create train-test split
     X_train, X_test, y_train, y_test = train_test_split(
-        texts, labels, 
-        test_size=config['test_size'], 
+        texts, labels,
+        test_size=config['test_size'],
         random_state=config['random_state']
     )
-    
+
     msg = f"Train set: {len(X_train)} samples"
     print(msg)
     print(msg, file=f)
-    
+
     msg = f"Test set: {len(X_test)} samples"
     print(msg)
     print(msg, file=f)
+
+    # Create XGBoost feature splits using simple OLD approach logic
+    features_file = 'data/features/extracted_features.csv'
+    if os.path.exists(features_file):
+        df_features = pd.read_csv(features_file)
+
+        print("🔧 Creating XGBoost feature splits (HuggingFace-based fix)...")
+
+        # HUGGINGFACE FIX: Apply identical transformations to features as main pipeline
+        X = df_features.drop('generated', axis=1)
+        y = df_features['generated']
+
+        # Step 1: Apply same HuggingFace-style shuffle using their exact algorithm
+        # Convert to dataset to use HuggingFace's shuffle, then back to pandas
+        features_ds = Dataset.from_pandas(df_features)  # Use the full features DataFrame
+        features_ds = features_ds.shuffle(seed=config['random_state'])
+
+        # Step 2: Apply same HuggingFace-style limit
+        if config['num_samples'] > 0:
+            features_ds = features_ds.select(range(min(config['num_samples'], len(features_ds))))
+            msg = f"🔧 Limited XGBoost features to {len(features_ds)} samples (using HuggingFace shuffle)"
+            print(msg)
+            print(msg, file=f)
+
+        # Convert back to pandas
+        features_df = features_ds.to_pandas()
+        X = features_df.drop('generated', axis=1)
+        y = features_df['generated']
+
+        # Step 3: Apply same train/test split as dataset
+        X_train_feat, X_test_feat, y_train_feat, y_test_feat = train_test_split(
+            X, y,
+            test_size=config['test_size'],
+            random_state=config['random_state']
+        )
+
+        msg = f"🔧 XGBoost feature splits created: {len(X_train_feat)} train, {len(X_test_feat)} test samples"
+        print(msg)
+        print(msg, file=f)
+    else:
+        msg = f"⚠️  Features file not found: {features_file}"
+        print(msg)
+        print(msg, file=f)
+        X_train_feat, X_test_feat, y_train_feat, y_test_feat = None, None, None, None
 
     msg = "\nEnabled Features:"
     print(msg)
@@ -266,16 +425,42 @@ def main(config_path='configuration.toml'):
                 clf = info['class'](**params)
 
                 if hasattr(clf, 'fit'):
-                    clf.fit(X_train, y_train)
-                    msg = "Model trained"
-                    print(msg)
-                    print(msg, file=f)
+                    if feat == 'xgboost_classifier':
+                        # XGBoost: Pass features directly instead of text
+                        if X_train_feat is not None and X_test_feat is not None:
+                            clf.fit(X_train_feat, y_train_feat)
+                            msg = "Model trained (using pre-extracted features)"
+                            print(msg)
+                            print(msg, file=f)
+                        else:
+                            msg = "⚠️  No features available for XGBoost, skipping..."
+                            print(msg)
+                            print(msg, file=f)
+                            continue
+                    else:
+                        # Other classifiers: Use text as usual
+                        clf.fit(X_train, y_train)
+                        msg = "Model trained"
+                        print(msg)
+                        print(msg, file=f)
 
             if feat != 'bert_classifier' or not use_cv:
-                if 'y_pred_feat' not in locals():
+                # Each classifier should generate its own predictions
+                if feat == 'xgboost_classifier':
+                    # XGBoost: Use features for prediction
+                    if X_test_feat is not None:
+                        y_pred_feat = clf.predict(X_test_feat)
+                        predictions[feat] = y_pred_feat
+                    else:
+                        msg = "⚠️  No test features available for XGBoost"
+                        print(msg)
+                        print(msg, file=f)
+                        continue
+                else:
+                    # Other classifiers: Use text as usual
                     y_pred_feat = clf.predict(X_test)
                     predictions[feat] = y_pred_feat
-                    accuracy_feat, report_feat = clf.evaluate(y_test, y_pred_feat)
+                accuracy_feat, report_feat = clf.evaluate(y_test, y_pred_feat)
 
             msg = f"Accuracy: {accuracy_feat:.4f}"
             print(msg)
@@ -286,6 +471,16 @@ def main(config_path='configuration.toml'):
             print(msg, file=f)
             print(report_feat)
             print(report_feat, file=f)
+
+            # Special handling for XGBoost - show feature importances
+            if feat == 'xgboost_classifier':
+                importance_df = clf.get_feature_importances()
+                if importance_df is not None:
+                    msg = "\nFeature Importances:"
+                    print(msg)
+                    print(msg, file=f)
+                    print(importance_df)
+                    print(importance_df, file=f)
 
     # Ensemble
     voters = [feat for feat in predictions if config['features'][feat]['allow_voting']]
