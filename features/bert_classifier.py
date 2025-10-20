@@ -4,23 +4,10 @@ import numpy as np
 from torch.utils.data import DataLoader, Dataset
 from transformers import AutoTokenizer, AutoModel
 from sklearn.base import BaseEstimator, ClassifierMixin
-from sklearn.metrics import accuracy_score, classification_report
+from sklearn.metrics import accuracy_score, classification_report, f1_score
 from tqdm import tqdm
 import os
 import json
-
-class TextDataset(Dataset):
-    def __init__(self, texts, labels=None):
-        self.texts = texts
-        self.labels = labels
-
-    def __len__(self):
-        return len(self.texts)
-
-    def __getitem__(self, idx):
-        if self.labels is not None:
-            return self.texts[idx], self.labels[idx]
-        return self.texts[idx]
 
 class TextDataset(Dataset):
     def __init__(self, texts, labels=None):
@@ -65,17 +52,6 @@ class BERTClassifier(BaseEstimator, ClassifierMixin):
             setattr(self, key, value)
         # Reinitialize if needed, but for simplicity, assume params set before fit
         return self
-
-    def collate_fn(self, batch):
-        if isinstance(batch[0], tuple):  # Training: (text, label)
-            texts, labels = zip(*batch)
-            inputs = self.tokenizer(list(texts), return_tensors='pt', truncation=True, padding=True, max_length=self.max_length).to(self.device)
-            labels = torch.tensor(labels, device=self.device)
-            return inputs, labels
-        else:  # Prediction: text only
-            texts = batch
-            inputs = self.tokenizer(list(texts), return_tensors='pt', truncation=True, padding=True, max_length=self.max_length).to(self.device)
-            return inputs
 
     def collate_fn(self, batch):
         if isinstance(batch[0], tuple):  # Training: (text, label)
@@ -137,8 +113,14 @@ class BERTClassifier(BaseEstimator, ClassifierMixin):
 
     def evaluate(self, y_test, y_pred):
         accuracy = accuracy_score(y_test, y_pred)
-        report = classification_report(y_test, y_pred, target_names=['Human Written', 'AI Generated'])
-        return accuracy, report
+
+        # Calculate F1 scores directly for full precision
+        f1_macro = f1_score(y_test, y_pred, average='macro')
+        f1_weighted = f1_score(y_test, y_pred, average='weighted')
+        f1_per_class = f1_score(y_test, y_pred, average=None)
+
+        report = classification_report(y_test, y_pred, target_names=['Human Written', 'AI Generated'], digits=4)
+        return accuracy, report, f1_macro, f1_weighted
 
     def save_model(self, path):
         """

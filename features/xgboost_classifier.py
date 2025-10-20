@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score, classification_report
+from sklearn.metrics import accuracy_score, classification_report, f1_score
 import xgboost as xgb
 import os
 
@@ -70,5 +70,11 @@ class XGBoostClassifier:
 
     def evaluate(self, y_test, y_pred):
         accuracy = accuracy_score(y_test, y_pred)
-        report = classification_report(y_test, y_pred, target_names=['Human', 'AI Generated'])
-        return accuracy, report
+
+        # Calculate F1 scores directly for full precision
+        f1_macro = f1_score(y_test, y_pred, average='macro')
+        f1_weighted = f1_score(y_test, y_pred, average='weighted')
+        f1_per_class = f1_score(y_test, y_pred, average=None)
+
+        report = classification_report(y_test, y_pred, target_names=['Human', 'AI Generated'], digits=4)
+        return accuracy, report, f1_macro, f1_weighted

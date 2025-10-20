@@ -357,7 +357,13 @@ class Ensemble:
             List of predictions
         """
         try:
-            total_samples = len(X_data)
+            # Handle different input types
+            if hasattr(X_data, '__len__'):
+                total_samples = len(X_data)
+            elif hasattr(X_data, 'shape'):
+                total_samples = X_data.shape[0]
+            else:
+                total_samples = 1
 
             # For sklearn models that can handle batch processing efficiently,
             # still show progress but process in reasonable batch sizes
@@ -381,9 +387,9 @@ class Ensemble:
 
                         # Update progress with metrics
                         pbar.update(len(batch))
-                        if pbar.last_iter_t > 0:  # Avoid division by zero
-                            samples_per_sec = len(batch) / pbar.last_iter_t
-                            elapsed = time.time() - start_time
+                        elapsed = time.time() - start_time
+                        if pbar.n > 0 and elapsed > 0:  # Avoid division by zero
+                            samples_per_sec = pbar.n / elapsed
                             eta = (total_samples - pbar.n) / samples_per_sec if samples_per_sec > 0 else 0
                             pbar.set_postfix({
                                 "samples/s": f"{samples_per_sec:.0f}",
@@ -409,7 +415,11 @@ class Ensemble:
 
         except Exception as e:
             print(f"⚠️  Progress tracking failed for {classifier_name}, falling back to normal prediction: {e}")
-            return clf.predict(X_data)
+            try:
+                return clf.predict(X_data)
+            except Exception as fallback_error:
+                print(f"❌  Both progress tracking and fallback prediction failed for {classifier_name}: {fallback_error}")
+                raise
 
     def _train_meta_classifier_with_progress(self, estimator, X_meta, y, estimator_name):
         """

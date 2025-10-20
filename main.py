@@ -2,7 +2,7 @@ import os
 import tomllib
 from datasets import load_from_disk, Dataset
 import pandas as pd
-from sklearn.metrics import accuracy_score, classification_report
+from sklearn.metrics import accuracy_score, classification_report, f1_score
 from sklearn.model_selection import train_test_split, KFold
 from features.nb_classifier import NBClassifier
 from features.random_choice import RandomClassifier
@@ -375,8 +375,8 @@ def main(config_path='configuration.toml'):
                 need_extraction = True
 
         if need_extraction:
-            import extract_linguistic_features
-            extract_linguistic_features.main()
+            import extract_linguistic_features as extract_features
+            extract_features.main()
             msg = "✅ Feature extraction completed!"
             print(msg)
             print(msg, file=f)
@@ -569,31 +569,21 @@ def main(config_path='configuration.toml'):
                             print(msg)
                             print(msg, file=f)
                         # Evaluate on all CV predictions
-                        accuracy_feat, report_feat = clf.evaluate(all_y_test, all_y_pred)
+                        accuracy_feat, report_feat, f1_macro_feat, f1_weighted_feat = clf.evaluate(all_y_test, all_y_pred)
                         msg = f"Cross-validation completed with {cv_folds} folds"
                         print(msg)
                         print(msg, file=f)
-                      # Predict on test set for voting using last clf
+                        msg = f"F1 Score (Macro): {f1_macro_feat:.4f}"
+                        print(msg)
+                        print(msg, file=f)
+                        msg = f"F1 Score (Weighted): {f1_weighted_feat:.4f}"
+                        print(msg)
+                        print(msg, file=f)
+                        # Predict on test set for voting using last clf
                         y_pred_feat = clf.predict(X_test)
                         predictions[feat] = y_pred_feat
                         trained_clfs[feat] = clf
                         # Do not save model in CV mode
-                    else:
-                        # Train new model
-                        clf = info['class'](**params)
-                        clf.fit(X_train, y_train)
-                        y_pred_feat = clf.predict(X_test)
-                        accuracy_feat, report_feat = clf.evaluate(y_test, y_pred_feat)
-                        msg = "Model trained"
-                        print(msg)
-                        print(msg, file=f)
-
-                        # Save model if requested
-                        if save_after_training:
-                            clf.save_model(model_path)
-                            msg = f"Model saved to {model_path}"
-                            print(msg)
-                            print(msg, file=f)
             # Special handling for DeBERTa classifier with pretrained model option
             elif feat == 'deberta_classifier':
                 use_pretrained = config['features'][feat].get('use_pretrained', False)
@@ -661,7 +651,7 @@ def main(config_path='configuration.toml'):
                     if X_test_feat is not None:
                         y_pred_feat = clf.predict(X_test_feat)
                         predictions[feat] = y_pred_feat
-                        accuracy_feat, report_feat = clf.evaluate(y_test, y_pred_feat)
+                        accuracy_feat, report_feat, f1_macro_feat, f1_weighted_feat = clf.evaluate(y_test, y_pred_feat)
                         trained_clfs[feat] = clf
                     else:
                         msg = "⚠️  No test features available for XGBoost"
@@ -672,13 +662,21 @@ def main(config_path='configuration.toml'):
                     # Other classifiers: Use text as usual
                     y_pred_feat = clf.predict(X_test)
                     predictions[feat] = y_pred_feat
-                    accuracy_feat, report_feat = clf.evaluate(y_test, y_pred_feat)
-                    trained_clfs[feat] = clf
+                accuracy_feat, report_feat, f1_macro_feat, f1_weighted_feat = clf.evaluate(y_test, y_pred_feat)
+                trained_clfs[feat] = clf
 
             # Store result in tracker
             results_tracker.add_individual_result(feat, accuracy_feat, report_feat)
 
             msg = f"Accuracy: {accuracy_feat:.4f}"
+            print(msg)
+            print(msg, file=f)
+
+            msg = f"F1 Score (Macro): {f1_macro_feat:.4f}"
+            print(msg)
+            print(msg, file=f)
+
+            msg = f"F1 Score (Weighted): {f1_weighted_feat:.4f}"
             print(msg)
             print(msg, file=f)
 
@@ -745,7 +743,18 @@ def main(config_path='configuration.toml'):
                 else:
                     y_pred_ensemble = ensemble.predict(X_test)
 
-            accuracy_ensemble, report_ensemble = ensemble.evaluate(y_test, y_pred_ensemble)
+            accuracy_ensemble = accuracy_score(y_test, y_pred_ensemble)
+
+            # Calculate F1 scores directly for full precision
+            f1_macro_ensemble = f1_score(y_test, y_pred_ensemble, average='macro')
+            f1_weighted_ensemble = f1_score(y_test, y_pred_ensemble, average='weighted')
+            f1_per_class_ensemble = f1_score(y_test, y_pred_ensemble, average=None)
+
+            report_ensemble = classification_report(
+                y_test, y_pred_ensemble,
+                target_names=['Human Written', 'AI Generated'],
+                digits=4
+            )
 
             # Store ensemble result in tracker
             if method == 'stacking':
@@ -762,6 +771,22 @@ def main(config_path='configuration.toml'):
             print(msg, file=f)
 
             msg = f"Accuracy: {accuracy_ensemble:.4f}"
+            print(msg)
+            print(msg, file=f)
+
+            msg = f"F1 Score (Macro): {f1_macro_ensemble:.4f}"
+            print(msg)
+            print(msg, file=f)
+
+            msg = f"F1 Score (Weighted): {f1_weighted_ensemble:.4f}"
+            print(msg)
+            print(msg, file=f)
+
+            msg = f"F1 Score (Human): {f1_per_class_ensemble[0]:.4f}"
+            print(msg)
+            print(msg, file=f)
+
+            msg = f"F1 Score (AI Generated): {f1_per_class_ensemble[1]:.4f}"
             print(msg)
             print(msg, file=f)
 

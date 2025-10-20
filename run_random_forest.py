@@ -34,7 +34,7 @@ rf_model = RandomForestClassifier(
 )
 rf_model.fit(X_train, y_train)
 
-y_pred_rf, accuracy_rf = evaluate_model(rf_model, X_test, y_test, f)
+y_pred_rf, accuracy_rf, f1_macro_rf, f1_weighted_rf = evaluate_model(rf_model, X_test, y_test, f)
 
 print_feature_importance(
     feature_names,

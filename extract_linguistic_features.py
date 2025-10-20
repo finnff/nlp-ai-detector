@@ -172,9 +172,129 @@ def extract_perplexity_features_for_all_samples(perplexity_file=DEFAULT_PERPLEXI
             return pd.DataFrame(columns=['orig_index', 'perplexity'])
     
 
-# TODO: discuss whether to include this (my vote: skip.)
 def extract_burstiness_features(text):
+    """
+    Extract burstiness features measuring variation in text structure.
+    High burstiness indicates human-like variation, low burstiness suggests AI-generated uniformity.
+    """
     features = {}
+
+    if not text or not text.strip():
+        return features
+
+    # Get sentence lengths using existing sentence splitting logic
+    sentences = re.split(r'[.!?]+', text)
+    sentences = [s.strip() for s in sentences if s.strip()]
+
+    if len(sentences) < 2:
+        # Not enough sentences for meaningful burstiness calculation
+        return features
+
+    # Core burstiness features
+    sentence_lengths = [len(sentence.split()) for sentence in sentences]
+    sentence_lengths = np.array(sentence_lengths)
+
+    # Basic statistics
+    mu = np.mean(sentence_lengths)
+    sigma = np.std(sentence_lengths)
+
+    if mu + sigma > 0:
+        # Standard burstiness formula: (σ - μ) / (σ + μ)
+        # Range: -1 (completely uniform) to 1 (highly variable)
+        features['sentence_length_burstiness'] = (sigma - mu) / (sigma + mu)
+    else:
+        features['sentence_length_burstiness'] = 0.0
+
+    # Additional variation metrics
+    if mu > 0:
+        features['sentence_length_cv'] = sigma / mu  # Coefficient of variation
+    else:
+        features['sentence_length_cv'] = 0.0
+
+    # Range-based features
+    min_len = np.min(sentence_lengths)
+    max_len = np.max(sentence_lengths)
+    if max_len > 0:
+        features['sentence_length_range_ratio'] = (max_len - min_len) / max_len
+    else:
+        features['sentence_length_range_ratio'] = 0.0
+
+    # Quartile-based dispersion
+    if len(sentence_lengths) >= 4:
+        q75, q25 = np.percentile(sentence_lengths, [75, 25])
+        features['sentence_length_iqr'] = (q75 - q25) / mu if mu > 0 else 0.0
+    else:
+        features['sentence_length_iqr'] = 0.0
+
+    # Adjacent sentence variation
+    if len(sentence_lengths) >= 2:
+        adjacent_diffs = np.abs(np.diff(sentence_lengths))
+        features['adjacent_sentence_variation'] = np.mean(adjacent_diffs) / mu if mu > 0 else 0.0
+    else:
+        features['adjacent_sentence_variation'] = 0.0
+
+    # Position-based burstiness (compare first vs second half)
+    if len(sentences) >= 4:
+        mid_point = len(sentences) // 2
+        first_half_lengths = sentence_lengths[:mid_point]
+        second_half_lengths = sentence_lengths[mid_point:]
+
+        first_half_cv = np.std(first_half_lengths) / np.mean(first_half_lengths) if np.mean(first_half_lengths) > 0 else 0.0
+        second_half_cv = np.std(second_half_lengths) / np.mean(second_half_lengths) if np.mean(second_half_lengths) > 0 else 0.0
+
+        features['position_burstiness_diff'] = abs(first_half_cv - second_half_cv)
+    else:
+        features['position_burstiness_diff'] = 0.0
+
+    # Long/Short sentence ratio
+    if mu > 0:
+        long_sentences = np.sum(sentence_lengths > mu * 1.5)
+        short_sentences = np.sum(sentence_lengths < mu * 0.7)
+        total_sentences = len(sentence_lengths)
+        features['long_sentence_ratio'] = long_sentences / total_sentences
+        features['short_sentence_ratio'] = short_sentences / total_sentences
+    else:
+        features['long_sentence_ratio'] = 0.0
+        features['short_sentence_ratio'] = 0.0
+
+    # Word-level burstiness within sentences
+    word_lengths_in_sentences = []
+    for sentence in sentences:
+        words = sentence.split()
+        if words:
+            word_lengths_in_sentences.extend([len(word) for word in words])
+
+    if len(word_lengths_in_sentences) >= 2:
+        word_lengths_in_sentences = np.array(word_lengths_in_sentences)
+        word_mu = np.mean(word_lengths_in_sentences)
+        word_sigma = np.std(word_lengths_in_sentences)
+
+        if word_mu + word_sigma > 0:
+            features['word_length_burstiness'] = (word_sigma - word_mu) / (word_sigma + word_mu)
+        else:
+            features['word_length_burstiness'] = 0.0
+    else:
+        features['word_length_burstiness'] = 0.0
+
+    # Clause-level burstiness (using commas as clause separators)
+    clause_lengths = []
+    for sentence in sentences:
+        clauses = [clause.strip() for clause in sentence.split(',') if clause.strip()]
+        if clauses:
+            clause_lengths.extend([len(clause.split()) for clause in clauses])
+
+    if len(clause_lengths) >= 2:
+        clause_lengths = np.array(clause_lengths)
+        clause_mu = np.mean(clause_lengths)
+        clause_sigma = np.std(clause_lengths)
+
+        if clause_mu + clause_sigma > 0:
+            features['clause_length_burstiness'] = (clause_sigma - clause_mu) / (clause_sigma + clause_mu)
+        else:
+            features['clause_length_burstiness'] = 0.0
+    else:
+        features['clause_length_burstiness'] = 0.0
+
     return features
 
 

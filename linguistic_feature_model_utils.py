@@ -4,7 +4,7 @@ import tomllib
 import datetime
 import os
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, f1_score
 
 
 def setup_argparser():
@@ -75,17 +75,26 @@ def dual_print(message, file_handle=None):
 def evaluate_model(model, X_test, y_test, file_handle=None):
     y_pred = model.predict(X_test)
     accuracy = accuracy_score(y_test, y_pred)
-    
+
+    # Calculate F1 scores directly for full precision
+    f1_macro = f1_score(y_test, y_pred, average='macro')
+    f1_weighted = f1_score(y_test, y_pred, average='weighted')
+    f1_per_class = f1_score(y_test, y_pred, average=None)
+
     dual_print(f"\nTest Accuracy: {accuracy:.4f}", file_handle)
+    dual_print(f"F1 Score (Macro): {f1_macro:.4f}", file_handle)
+    dual_print(f"F1 Score (Weighted): {f1_weighted:.4f}", file_handle)
+    dual_print(f"F1 Score (Human): {f1_per_class[0]:.4f}", file_handle)
+    dual_print(f"F1 Score (AI Generated): {f1_per_class[1]:.4f}", file_handle)
     dual_print("\nClassification Report:", file_handle)
-    report = classification_report(y_test, y_pred, target_names=['Human', 'AI Generated'])
+    report = classification_report(y_test, y_pred, target_names=['Human', 'AI Generated'], digits=4)
     dual_print(report, file_handle)
-    
+
     dual_print("\nConfusion Matrix:", file_handle)
     conf_matrix = confusion_matrix(y_test, y_pred)
     dual_print(conf_matrix, file_handle)
-    
-    return y_pred, accuracy
+
+    return y_pred, accuracy, f1_macro, f1_weighted
 
 
 def print_feature_importance(feature_names, importances, title, file_handle=None):
