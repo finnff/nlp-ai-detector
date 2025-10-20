@@ -24,6 +24,14 @@ def load_config(config_path):
 
 def load_and_split_data(features_path, test_size, random_state):
     df = pd.read_csv(features_path)
+    
+    # if nan use mean
+    if df.isnull().sum().sum() > 0:
+        numeric_cols = df.select_dtypes(include=['number']).columns
+        for col in numeric_cols:
+            if df[col].isnull().any():
+                df[col].fillna(df[col].mean(), inplace=True)
+    
     X = df.drop('generated', axis=1)
     y = df['generated']
     
@@ -40,6 +48,20 @@ def load_and_split_data_with_logging(features_path, test_size, random_state, fil
     df = pd.read_csv(features_path)
     dual_print(f"Dataset shape: {df.shape}", file_handle)
     dual_print(f"Columns: {df.columns.tolist()}", file_handle)
+    
+    # if nan use mean
+    nan_counts = df.isnull().sum()
+    if nan_counts.sum() > 0:
+        dual_print(f"Total nans: {nan_counts.sum()}", file_handle)
+        nan_features = nan_counts[nan_counts > 0]
+        dual_print("NaN per feature:", file_handle)
+        dual_print(nan_features, file_handle)
+        
+        numeric_cols = df.select_dtypes(include=['number']).columns
+        for col in numeric_cols:
+            if df[col].isnull().any():
+                mean_val = df[col].mean()
+                df[col].fillna(mean_val, inplace=True)
     
     X = df.drop('generated', axis=1)
     y = df['generated']
