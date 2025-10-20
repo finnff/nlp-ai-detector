@@ -146,20 +146,30 @@ if 'ai_text_detection_pile' in source_dfs:
     source_dfs['ai_text_detection_pile']['generated'] = source_dfs['ai_text_detection_pile']['source'].apply(lambda x: 0 if x == 'human' else 1)
     source_dfs['ai_text_detection_pile'] = standardize_dataset(source_dfs['ai_text_detection_pile'], 'ai_text_detection_pile')
 
-# HC3 - Filter and Flatten
+# HC3 - Check if already flattened or needs processing
 if 'hc3' in source_dfs:
-    sources_to_include = config['hc3']['sources_to_include']
-    source_dfs['hc3'] = source_dfs['hc3'][source_dfs['hc3']['source'].isin(sources_to_include)]
-    rows = []
-    for _, row in source_dfs['hc3'].iterrows():
-        for ans in row['human_answers']:
-            if ans:  # Skip empty
-                rows.append({'text': ans, 'generated': 0})
-        for ans in row['chatgpt_answers']:
-            if ans:  # Skip empty
-                rows.append({'text': ans, 'generated': 1})
-    source_dfs['hc3'] = pd.DataFrame(rows)  # Overwrite with flat df
-    source_dfs['hc3'] = standardize_dataset(source_dfs['hc3'], 'hc3')
+    df = source_dfs['hc3']
+
+    # Check if dataset is already flattened (has 'text' and 'generated' columns)
+    if 'text' in df.columns and 'generated' in df.columns and 'human_answers' not in df.columns:
+        print("   HC3 dataset already flattened, using as-is")
+        # Already flattened format - just standardize it
+        source_dfs['hc3'] = standardize_dataset(df, 'hc3')
+    else:
+        print("   HC3 dataset needs flattening")
+        # Original nested format - apply flattening
+        sources_to_include = config['hc3']['sources_to_include']
+        df = df[df['source'].isin(sources_to_include)]
+        rows = []
+        for _, row in df.iterrows():
+            for ans in row['human_answers']:
+                if ans:  # Skip empty
+                    rows.append({'text': ans, 'generated': 0})
+            for ans in row['chatgpt_answers']:
+                if ans:  # Skip empty
+                    rows.append({'text': ans, 'generated': 1})
+        source_dfs['hc3'] = pd.DataFrame(rows)  # Overwrite with flat df
+        source_dfs['hc3'] = standardize_dataset(source_dfs['hc3'], 'hc3')
 
 # sunilthite
 if 'sunilthite' in source_dfs:

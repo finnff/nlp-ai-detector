@@ -4,7 +4,7 @@ Title = "Combined Dataset Maker"
 
 # Total number of samples to include in the combined dataset
 # if set to MAX, it uses all available samples from enabled sources
-total_samples = 5000
+total_samples = 10000
 
 # if true, saves the combined dataset in Apache Arrow format for efficiency, otherwise saves as csv
 use_arrow = false
@@ -36,7 +36,9 @@ resume = true
 
 [ai_text_detection_pile]
 enabled = false
+# NOTE: THIS DOES NOT HAVE PRECOMPUTED PERPLEXITYS AS OF 20/10
 relative_portion = 0
+
 
 
 [hc3]
@@ -47,17 +49,17 @@ sources_to_include = [
     'finance',
     'medicine',
 ]
-enabled = false
+enabled = true
 relative_portion = 0
 
 
 [daigt_v2]
-enabled = false
+enabled = true
 relative_portion = 0
 
 
 [sunilthite]
-enabled = false
+enabled = true
 relative_portion = 0
 
 

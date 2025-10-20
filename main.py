@@ -130,11 +130,9 @@ def main(config_path='configuration.toml'):
     # Extract features if enabled and not exist
     if config.get('extract_features', {}).get('enabled', False):
         features_file = 'data/features/extracted_features.csv'
-        processed_file = 'data/features/extracted_features_processed.csv'
 
         # Check if we need to extract features
         need_extraction = False
-        need_preprocessing = False
 
         if not os.path.exists(features_file):
             need_extraction = True
@@ -182,29 +180,7 @@ def main(config_path='configuration.toml'):
             print(msg)
             print(msg, file=f)
 
-        # Check preprocessing
-        if config.get('preprocess_features', {}).get('enabled', False):
-            if not os.path.exists(processed_file):
-                need_preprocessing = True
-                msg = "🔄 Preprocessing features for classifiers..."
-                print(msg)
-                print(msg, file=f)
-            else:
-                msg = "✅ Found preprocessed features file"
-                print(msg)
-                print(msg, file=f)
-
-            if need_preprocessing:
-                import subprocess
-                result = subprocess.run(['python', 'preprocess_features.py'], capture_output=True, text=True)
-                if result.stdout:
-                    print(result.stdout)
-                if result.stderr:
-                    print(f"⚠️  Preprocessing warnings: {result.stderr}")
-                msg = "✅ Feature preprocessing completed!"
-                print(msg)
-                print(msg, file=f)
-
+  
         # Final feature summary
         if os.path.exists(features_file):
             try:

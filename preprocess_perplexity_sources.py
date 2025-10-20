@@ -143,7 +143,46 @@ class PerplexityProcessor:
         ppl = math.exp(nll_sum / n_tokens)
         return float(ppl), int(n_tokens)
 
-    def process_dataset(self, input_path: str, output_path: str, text_column: str = "text", file_type: str = "csv") -> bool:
+    def flatten_hc3_dataset(self, dataset, sources_to_include=None):
+        """Flatten HC3 dataset from nested structure to flat text entries."""
+        import pandas as pd
+        print(f"   Flattening HC3 dataset structure...")
+
+        # Filter by sources if specified
+        if sources_to_include:
+            dataset = dataset[dataset['source'].isin(sources_to_include)]
+            print(f"   Filtered to sources: {sources_to_include}")
+
+        rows = []
+        for _, row in dataset.iterrows():
+            # Add human answers
+            for ans in row['human_answers']:
+                if ans:  # Skip empty answers
+                    rows.append({
+                        'text': ans,
+                        'generated': 0,
+                        'source': row['source'],
+                        'id': row['id']
+                    })
+
+            # Add AI answers
+            for ans in row['chatgpt_answers']:
+                if ans:  # Skip empty answers
+                    rows.append({
+                        'text': ans,
+                        'generated': 1,
+                        'source': row['source'],
+                        'id': row['id']
+                    })
+
+        flat_df = pd.DataFrame(rows)
+        print(f"   Flattened {len(dataset)} HC3 entries to {len(flat_df)} text samples")
+        print(f"   Human samples: {len(flat_df[flat_df['generated'] == 0])}")
+        print(f"   AI samples: {len(flat_df[flat_df['generated'] == 1])}")
+
+        return flat_df
+
+    def process_dataset(self, input_path: str, output_path: str, text_column: str = "text", file_type: str = "csv", source_name: str = None) -> bool:
         """Process a dataset and add perplexity column."""
         import pandas as pd
         from tqdm import tqdm
@@ -161,6 +200,23 @@ class PerplexityProcessor:
                 else:
                     df = dataset.to_pandas()
                     print(f"✅ Loaded Arrow dataset: {len(df)} samples")
+
+                # Special handling for HC3 dataset - flatten nested structure
+                if source_name == 'hc3' and 'human_answers' in df.columns and 'chatgpt_answers' in df.columns:
+                    print("   Detected HC3 dataset structure - applying flattening")
+                    # Load config to get sources_to_include if available
+                    sources_to_include = None
+                    try:
+                        import tomllib
+                        with open('dataset_configuration.toml', 'rb') as f:
+                            config = tomllib.load(f)
+                        sources_to_include = config.get('hc3', {}).get('sources_to_include', None)
+                    except Exception:
+                        print("   Could not load config for HC3 sources, using all sources")
+
+                    df = self.flatten_hc3_dataset(df, sources_to_include)
+                    print("   ✅ HC3 dataset flattened successfully")
+
             except Exception as e:
                 print(f"❌ Error loading Arrow dataset: {e}")
                 return False
@@ -257,6 +313,17 @@ class PerplexityProcessor:
         df['perplexity'] = perplexities
         df['ppl_tokens'] = tokens_count
         df['ppl_model'] = self.model_name
+
+        # Preserve additional columns for HC3 if they exist
+        if source_name == 'hc3':
+            # For HC3, we want to preserve the flattened structure for combine_dataset.py
+            columns_to_save = ['text', 'generated', 'perplexity', 'ppl_tokens', 'ppl_model']
+            if 'source' in df.columns:
+                columns_to_save.append('source')
+            if 'id' in df.columns:
+                columns_to_save.append('id')
+            df = df[columns_to_save]
+            print(f"   Preserved HC3 structure with columns: {columns_to_save}")
 
         # Save enhanced dataset
         if file_type == 'arrow' or output_path.endswith('.arrow'):
@@ -470,7 +537,8 @@ def main():
                 input_path=config['input_path'],
                 output_path=config['output_path'],
                 text_column=config['text_column'],
-                file_type=config['type']
+                file_type=config['type'],
+                source_name=source_name
             )
 
             if success:

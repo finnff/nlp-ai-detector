@@ -14,8 +14,6 @@ test_size = 0.2
 [extract_features]
 enabled = true
 
-[preprocess_features]
-enabled = true
 
 [features.nb_classifier]
 enabled = false

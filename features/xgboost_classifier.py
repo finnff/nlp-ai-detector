@@ -6,7 +6,7 @@ import xgboost as xgb
 import os
 
 class XGBoostClassifier:
-    def __init__(self, features_file='data/features/extracted_features_processed.csv', n_estimators=100, max_depth=6, learning_rate=0.1, random_state=42, test_size=0.2):
+    def __init__(self, features_file='data/features/extracted_features.csv', n_estimators=100, max_depth=6, learning_rate=0.1, random_state=42, test_size=0.2):
         self.features_file = features_file
         self.n_estimators = n_estimators
         self.max_depth = max_depth
