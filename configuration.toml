@@ -3,7 +3,7 @@ Title = "Ai-detector Configuration"
 
 # Number of samples to use from the combined dataset
 # if 0, all samples will be used
-num_samples = 2000
+num_samples = 0
 
 # Random state for shuffling and splitting
 random_state = 42
@@ -18,21 +18,21 @@ enabled = true
 enabled = true
 
 [features.nb_classifier]
-enabled = true
+enabled = false
 allow_voting = true
 
 [features.nb_classifier.params]
 alpha = 1.0
 
 [features.nb_no_stopwords]
-enabled = true
+enabled = false
 allow_voting = true
 
 [features.nb_no_stopwords.params]
 alpha = 1.0
 
 [features.random_choice]
-enabled = true
+enabled = false
 allow_voting = false
 
 # Cross-validation options (alternative to train-test split for more robust evaluation)
@@ -42,7 +42,7 @@ use_cv = false
 cv_folds = 5
 
 [features.bert_classifier]
-enabled = true
+enabled = false
 allow_voting = true
 # Set to true to load a pretrained model instead of training from scratch
 use_pretrained = true

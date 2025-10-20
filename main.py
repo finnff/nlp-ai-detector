@@ -237,6 +237,12 @@ def main(config_path='configuration.toml'):
         msg = f"Limited to {len(ds)} samples"
         print(msg)
         print(msg, file=f)
+    else:
+        # When num_samples = 0, still shuffle to match XGBoost features processing
+        ds = ds.shuffle(seed=config['random_state'])
+        msg = f"Using all {len(ds)} samples (shuffled)"
+        print(msg)
+        print(msg, file=f)
 
     # Extract texts and labels
     texts = ds['text']
@@ -277,6 +283,11 @@ def main(config_path='configuration.toml'):
         if config['num_samples'] > 0:
             features_ds = features_ds.select(range(min(config['num_samples'], len(features_ds))))
             msg = f"🔧 Limited XGBoost features to {len(features_ds)} samples (using HuggingFace shuffle)"
+            print(msg)
+            print(msg, file=f)
+        else:
+            # When num_samples = 0, use all samples but still confirm HuggingFace shuffle was applied
+            msg = f"🔧 Using all {len(features_ds)} XGBoost features (with HuggingFace shuffle)"
             print(msg)
             print(msg, file=f)
 
