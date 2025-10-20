@@ -48,7 +48,7 @@ python -m spacy download en
 
 ## Usage
 1. Log into hf using Run get_datasets.py to download datasets: `python get_datasets.py`.
-2. Run feature extraction: `python extract_features.py --dataset <path> --output <path>. If no path, defaults are used. 
+2. Run feature extraction: `python extract_linguistic_features.py --dataset <path> --output <path>. If no path, defaults are used. 
 3. Train/evaluate: `python train.py --model xgboost --features all`.
 4. Analyze: `python analyze_importance.py`.
 
