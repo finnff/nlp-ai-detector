@@ -40,7 +40,6 @@ enabled = false
 relative_portion = 0
 
 
-
 [hc3]
 sources_to_include = [
     'reddit_eli5',
