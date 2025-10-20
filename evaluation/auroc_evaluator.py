@@ -104,7 +104,7 @@ class AUROCEvaluator:
             return "ROC Curves - AI Text Detection Performance"
 
         # Extract metadata
-        total_samples = self.dataset_metadata.get('total_samples', 'Unknown')
+        actual_samples = self.dataset_metadata.get('actual_samples', 'Unknown')
         test_split = self.dataset_metadata.get('test_split', 'Unknown')
         enabled_datasets = self.dataset_metadata.get('enabled_datasets', [])
         balance_classes = self.dataset_metadata.get('balance_classes', False)
@@ -119,13 +119,13 @@ class AUROCEvaluator:
             datasets_str = "Unknown"
 
         # Format sample size
-        if isinstance(total_samples, (int, float)):
-            if total_samples >= 1000:
-                samples_str = f"{total_samples/1000:.0f}K samples"
+        if isinstance(actual_samples, (int, float)):
+            if actual_samples >= 1000:
+                samples_str = f"{actual_samples/1000:.0f}K samples"
             else:
-                samples_str = f"{total_samples} samples"
+                samples_str = f"{actual_samples} samples"
         else:
-            samples_str = f"{total_samples} samples"
+            samples_str = f"{actual_samples} samples"
 
         # Format test split
         if isinstance(test_split, float):
