@@ -19,9 +19,24 @@ balance_classes = false
 # set relative portion to "0.2" for 20% of the total samples from that source
 # if using relative portion, ensure the sum of all relative portions equals 1.0
 
+# Perplexity processing configuration
+[perplexity]
+# Model to use for perplexity calculation
+model = "EleutherAI/pythia-1.4b"
+# Maximum sequence length for perplexity calculation
+max_len = 1536
+# Stride for sliding window (use same as max_len to avoid overlap)
+stride = 1536
+# Batch size for processing (not implemented yet, so leave at 1, think batch processing requires multi-gpu or running
+# multiple modelels with seperate dataloaders in parallel?)
+batch_size = 1
+# Resume processing if interrupted (skip existing outputs)
+resume = true
+
 
 [ai_text_detection_pile]
-enabled = true
+enabled = false
+# NOTE: THIS DOES NOT HAVE PRECOMPUTED PERPLEXITYS AS OF 20/10
 relative_portion = 0
 
 

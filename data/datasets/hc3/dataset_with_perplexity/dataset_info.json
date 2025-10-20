@@ -1,0 +1,36 @@
+{
+  "citation": "",
+  "description": "",
+  "features": {
+    "text": {
+      "dtype": "string",
+      "_type": "Value"
+    },
+    "generated": {
+      "dtype": "int64",
+      "_type": "Value"
+    },
+    "perplexity": {
+      "dtype": "float64",
+      "_type": "Value"
+    },
+    "ppl_tokens": {
+      "dtype": "int64",
+      "_type": "Value"
+    },
+    "ppl_model": {
+      "dtype": "string",
+      "_type": "Value"
+    },
+    "source": {
+      "dtype": "string",
+      "_type": "Value"
+    },
+    "id": {
+      "dtype": "string",
+      "_type": "Value"
+    }
+  },
+  "homepage": "",
+  "license": ""
+}

@@ -3,7 +3,7 @@ Title = "Ai-detector Configuration"
 
 # Number of samples to use from the combined dataset
 # if 0, all samples will be used
-num_samples = 2000
+num_samples = 0
 
 # Random state for shuffling and splitting
 random_state = 42
@@ -11,26 +11,36 @@ random_state = 42
 # Test size for train-test split
 test_size = 0.2
 
-[features.nb_classifier]
+[extract_features]
 enabled = true
+
+
+[features.nb_classifier]
+enabled = false
 allow_voting = true
 
 [features.nb_classifier.params]
 alpha = 1.0
 
 [features.nb_no_stopwords]
-enabled = true
+enabled = false
 allow_voting = true
 
 [features.nb_no_stopwords.params]
 alpha = 1.0
 
 [features.random_choice]
-enabled = true
+enabled = false
 allow_voting = false
 
+# Cross-validation options (alternative to train-test split for more robust evaluation)
+# Set to true to use cross-validation instead of simple train-test split
+use_cv = false
+# Number of CV folds (only used if use_cv = true)
+cv_folds = 5
+
 [features.bert_classifier]
-enabled = true
+enabled = false
 allow_voting = true
 # Set to true to load a pretrained model instead of training from scratch
 use_pretrained = true
@@ -39,11 +49,6 @@ model_path = "models/bert_classifier_172402.pt"
 # Set to true to automatically save the model after training
 save_after_training = true
 
-# Cross-validation options (alternative to train-test split for more robust evaluation)
-# Set to true to use cross-validation instead of simple train-test split
-use_cv = false
-# Number of CV folds (only used if use_cv = true)
-cv_folds = 5
 
 [features.bert_classifier.params]
 model_name = "google-bert/bert-base-uncased"
@@ -51,3 +56,30 @@ max_length = 128
 epochs = 3
 lr = 0.005
 batch_size = 64
+
+[features.deberta_classifier]
+enabled = true
+allow_voting = true
+# Set to true to load a pretrained model instead of training from scratch
+use_pretrained = true
+# Path to the saved model file (used when use_pretrained = true)
+model_path = "models/deberta_classifier_172402.pt"
+# Set to true to automatically save the model after training
+save_after_training = false
+
+[features.deberta_classifier.params]
+model_name = "microsoft/deberta-v3-base"
+max_length = 128
+epochs = 3
+lr = 0.005
+batch_size = 64
+
+[features.xgboost_classifier]
+enabled = true
+allow_voting = true
+
+[features.xgboost_classifier.params]
+features_file = "data/features/extracted_features.csv"
+n_estimators = 100
+max_depth = 6
+learning_rate = 0.1
