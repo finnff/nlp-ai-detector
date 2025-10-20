@@ -32,7 +32,7 @@ X_test_scaled = scaler.transform(X_test)
 lr_model = LogisticRegression(random_state=random_state, max_iter=1000)
 lr_model.fit(X_train_scaled, y_train)
 
-y_pred_lr, accuracy_lr = evaluate_model(lr_model, X_test_scaled, y_test, f)
+y_pred_lr, accuracy_lr, f1_macro_lr, f1_weighted_lr = evaluate_model(lr_model, X_test_scaled, y_test, f)
 
 # normalize, since logistic regression gives coefficients, while random forest and zgboost already normalize. 
 abs_coef = np.abs(lr_model.coef_[0])

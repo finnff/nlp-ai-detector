@@ -34,7 +34,7 @@ model = xgb.XGBClassifier(
 
 model.fit(X_train, y_train)
 
-y_pred, accuracy = evaluate_model(model, X_test, y_test, f)
+y_pred, accuracy, f1_macro, f1_weighted = evaluate_model(model, X_test, y_test, f)
 y_pred_proba = model.predict_proba(X_test)[:, 1]
 
 print_feature_importance(
