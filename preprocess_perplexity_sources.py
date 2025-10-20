@@ -300,6 +300,89 @@ class PerplexityProcessor:
             print(f"❌ Text column '{text_column}' not found in {input_path}")
             return False
 
+        # Special handling for EvoBench JSON datasets
+        if file_type == 'evobench_json':
+            import json
+
+            # Load configuration from the config dict
+            model_families = config.get('model_families', [])
+            domains_to_include = config.get('domains_to_include', [])
+
+            print(f"Processing EvoBench JSON dataset...")
+            print(f"   Model families: {model_families}")
+            print(f"   Domains: {domains_to_include}")
+
+            all_texts = []
+
+            # Process each model family
+            for model_family in model_families:
+                model_path = os.path.join(input_path, model_family)
+
+                if not os.path.exists(model_path):
+                    print(f"   ⚠️  Model family directory not found: {model_path}")
+                    continue
+
+                print(f"   Processing {model_family}...")
+
+                # Find all JSON files for this model family
+                try:
+                    json_files = []
+                    for file in os.listdir(model_path):
+                        if file.endswith('.raw_data.json'):
+                            # Extract domain from filename (e.g., 'peerread_gpt-4.raw_data.json' -> 'peerread')
+                            parts = file.replace('.raw_data.json', '').split('_')
+                            if len(parts) >= 2:
+                                domain = parts[0]
+                                if domain in domains_to_include:
+                                    json_files.append((file, domain))
+
+                    print(f"     Found {len(json_files)} matching JSON files")
+
+                    # Process each JSON file
+                    for json_file, domain in json_files:
+                        file_path = os.path.join(model_path, json_file)
+                        try:
+                            with open(file_path, 'r', encoding='utf-8') as f:
+                                data = json.load(f)
+
+                            # Extract text samples from "original" field
+                            if 'original' in data and isinstance(data['original'], list):
+                                for text in data['original']:
+                                    if text and str(text).strip():  # Skip empty texts
+                                        all_texts.append({
+                                            'text': str(text).strip(),
+                                            'generated': 1,  # All EvoBench text is AI-generated
+                                            'source': f"evobench_{model_family}",
+                                            'domain': domain
+                                        })
+
+                        except Exception as e:
+                            print(f"     ❌ Error processing {json_file}: {e}")
+                            continue
+
+                except Exception as e:
+                    print(f"   ❌ Error scanning {model_family} directory: {e}")
+                    continue
+
+            if not all_texts:
+                print(f"❌ No valid text samples found in EvoBench dataset")
+                return False
+
+            df = pd.DataFrame(all_texts)
+            print(f"   ✅ Loaded {len(df)} text samples from EvoBench")
+
+            # Show domain distribution
+            domain_counts = df['domain'].value_counts()
+            print(f"   Domain distribution:")
+            for domain, count in domain_counts.items():
+                print(f"     {domain}: {count}")
+
+            # Show model family distribution
+            source_counts = df['source'].value_counts()
+            print(f"   Model family distribution:")
+            for source, count in source_counts.items():
+                print(f"     {source}: {count}")
+
         # Calculate perplexity for each text
         perplexities = []
         tokens_count = []
@@ -324,6 +407,17 @@ class PerplexityProcessor:
                 columns_to_save.append('id')
             df = df[columns_to_save]
             print(f"   Preserved HC3 structure with columns: {columns_to_save}")
+
+        # Preserve additional columns for EvoBench if they exist
+        if source_name == 'evobench':
+            # For EvoBench, we want to preserve the source and domain information
+            columns_to_save = ['text', 'generated', 'perplexity', 'ppl_tokens', 'ppl_model']
+            if 'source' in df.columns:
+                columns_to_save.append('source')
+            if 'domain' in df.columns:
+                columns_to_save.append('domain')
+            df = df[columns_to_save]
+            print(f"   Preserved EvoBench structure with columns: {columns_to_save}")
 
         # Save enhanced dataset
         if file_type == 'arrow' or output_path.endswith('.arrow'):
@@ -430,6 +524,42 @@ def detect_source_datasets(datasets_dir: str) -> Dict[str, Dict]:
             'output_path': os.path.join(datasets_dir, 'ah_aitd', 'AHAIRD_Dataset_with_perplexity.csv'),
             'text_column': 'text'
         }
+
+    # Check for EvoBench dataset
+    evobench_path = os.path.join('data', 'uncompressed', 'EvoBench')
+    if os.path.exists(evobench_path):
+        print(f"📊 Found EvoBench dataset: {evobench_path}")
+
+        # Get configuration if available
+        model_families = []
+        domains_to_include = []
+        try:
+            import tomllib
+            with open('dataset_configuration.toml', 'rb') as f:
+                config = tomllib.load(f)
+            model_families = config.get('evobench', {}).get('model_families', [])
+            domains_to_include = config.get('evobench', {}).get('domains_to_include', [])
+        except Exception:
+            print("   Could not load EvoBench configuration, using all available")
+            # If no config, use all available model families and domains
+            try:
+                model_families = [d for d in os.listdir(evobench_path)
+                                 if os.path.isdir(os.path.join(evobench_path, d)) and d != '.git']
+                # Default domains
+                domains_to_include = ['xsum', 'writing', 'pubmed', 'peerread', 'harmful']
+            except Exception:
+                pass
+
+        if model_families and domains_to_include:
+            # Create a combined JSON processor for EvoBench
+            sources['evobench'] = {
+                'type': 'evobench_json',
+                'input_path': evobench_path,
+                'output_path': os.path.join(evobench_path, 'evobench_with_perplexity.csv'),
+                'text_column': 'text',
+                'model_families': model_families,
+                'domains_to_include': domains_to_include
+            }
 
     return sources
 

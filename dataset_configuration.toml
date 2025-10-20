@@ -4,7 +4,7 @@ Title = "Combined Dataset Maker 20/10"
 
 # Total number of samples to include in the combined dataset
 # if set to MAX, it uses all available samples from enabled sources
-total_samples = 172000
+total_samples = 1720
 
 # if true, saves the combined dataset in Apache Arrow format for efficiency, otherwise saves as csv
 use_arrow = false
@@ -68,4 +68,20 @@ relative_portion = 0
 
 [llm_detect_competition]
 enabled = false
+relative_portion = 0
+
+[evobench]
+enabled = true
+# Model families to include from EvoBench dataset
+model_families = [
+    'GPT4',
+    'GPT4o',
+    'Claude',
+    'Gemini',
+    'LlaMA-2-7B',
+    'LlaMA3',
+    'Qwen',
+]
+# Domains to include from EvoBench dataset
+domains_to_include = ['xsum', 'writing', 'pubmed', 'peerread', 'harmful']
 relative_portion = 0

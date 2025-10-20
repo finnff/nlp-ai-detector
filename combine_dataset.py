@@ -37,6 +37,7 @@ sunilthite_path = os.path.join(datasets_dir, 'sunilthite', 'sunilthite_Training_
 daigt_v2_path = os.path.join(datasets_dir, 'daigt_v2', 'DAIGT_v2_train_v2_drcat_02.csv')
 kaggle_comp_path = os.path.join(datasets_dir, 'llm_detect_competition', 'kaggleComp_train_essays.csv')
 ah_aitd_path = os.path.join(datasets_dir, 'ah_aitd', 'AHAIRD_Dataset.xlsx')
+evobench_path = os.path.join('data', 'uncompressed', 'EvoBench')
 
 def standardize_dataset(df, source_name):
     """Standardize dataset while preserving perplexity and other important columns."""
@@ -98,6 +99,93 @@ def load_with_fallback(perplexity_path, original_path, file_type='arrow'):
 
     raise FileNotFoundError(f"Neither perplexity-enhanced nor original dataset found: {perplexity_path}, {original_path}")
 
+def load_evobench_dataset():
+    """Load EvoBench dataset from JSON files with configurable model families and domains."""
+    import json
+
+    if not os.path.exists(evobench_path):
+        raise FileNotFoundError(f"EvoBench directory not found: {evobench_path}")
+
+    # Get configuration
+    model_families = config['evobench']['model_families']
+    domains_to_include = config['evobench']['domains_to_include']
+
+    print(f"Loading EvoBench dataset...")
+    print(f"   Model families: {model_families}")
+    print(f"   Domains: {domains_to_include}")
+
+    all_texts = []
+
+    # Process each model family
+    for model_family in model_families:
+        model_path = os.path.join(evobench_path, model_family)
+
+        if not os.path.exists(model_path):
+            print(f"   ⚠️  Model family directory not found: {model_path}")
+            continue
+
+        print(f"   Processing {model_family}...")
+
+        # Find all JSON files for this model family
+        try:
+            json_files = []
+            for file in os.listdir(model_path):
+                if file.endswith('.raw_data.json'):
+                    # Extract domain from filename (e.g., 'peerread_gpt-4.raw_data.json' -> 'peerread')
+                    parts = file.replace('.raw_data.json', '').split('_')
+                    if len(parts) >= 2:
+                        domain = parts[0]
+                        if domain in domains_to_include:
+                            json_files.append((file, domain))
+
+            print(f"     Found {len(json_files)} matching JSON files")
+
+            # Process each JSON file
+            for json_file, domain in json_files:
+                file_path = os.path.join(model_path, json_file)
+                try:
+                    with open(file_path, 'r', encoding='utf-8') as f:
+                        data = json.load(f)
+
+                    # Extract text samples from "original" field
+                    if 'original' in data and isinstance(data['original'], list):
+                        for text in data['original']:
+                            if text and str(text).strip():  # Skip empty texts
+                                all_texts.append({
+                                    'text': str(text).strip(),
+                                    'generated': 1,  # All EvoBench text is AI-generated
+                                    'source': f"evobench_{model_family}",
+                                    'domain': domain
+                                })
+
+                except Exception as e:
+                    print(f"     ❌ Error processing {json_file}: {e}")
+                    continue
+
+        except Exception as e:
+            print(f"   ❌ Error scanning {model_family} directory: {e}")
+            continue
+
+    if not all_texts:
+        raise ValueError(f"No valid text samples found in EvoBench dataset with specified criteria")
+
+    df = pd.DataFrame(all_texts)
+    print(f"   ✅ Loaded {len(df)} text samples from EvoBench")
+
+    # Show domain distribution
+    domain_counts = df['domain'].value_counts()
+    print(f"   Domain distribution:")
+    for domain, count in domain_counts.items():
+        print(f"     {domain}: {count}")
+
+    # Show model family distribution
+    source_counts = df['source'].value_counts()
+    print(f"   Model family distribution:")
+    for source, count in source_counts.items():
+        print(f"     {source}: {count}")
+
+    return df
+
 # Map source names to loaders with fallback support
 source_loaders = {
     'ai_text_detection_pile': lambda: load_with_fallback(
@@ -130,6 +218,7 @@ source_loaders = {
         kaggle_comp_path,
         'csv'
     ),
+    'evobench': load_evobench_dataset,
 }
 
 # Get enabled sources
@@ -191,6 +280,12 @@ if 'ah_aitd' in source_dfs:
     source_dfs['ah_aitd']['generated'] = source_dfs['ah_aitd']['label_name'].apply(lambda x: 0 if 'human' in x.lower() else 1)
     source_dfs['ah_aitd'] = standardize_dataset(source_dfs['ah_aitd'], 'ah_aitd')
 
+# EvoBench
+if 'evobench' in source_dfs:
+    # EvoBench already has 'generated' column (all 1s) and 'text' column
+    # Just need to standardize it
+    source_dfs['evobench'] = standardize_dataset(source_dfs['evobench'], 'evobench')
+
 # Handle relative portions
 portions = {}
 sum_portions = sum(config[key]['relative_portion'] for key in enabled_sources if config[key]['relative_portion'] > 0)
@@ -238,14 +333,23 @@ else:
         if balance_classes:
             human_df = df[df['generated'] == 0]
             ai_df = df[df['generated'] == 1]
-            # limited by the smallest class per source
-            max_balanced = 2 * min(len(human_df), len(ai_df))
-            target_n = min(target_n, max_balanced)
-            n_per_class = target_n // 2
-            sampled = pd.concat([
-                human_df.sample(n=n_per_class, random_state=RANDOM_STATE, replace=False),
-                ai_df.sample(n=n_per_class, random_state=RANDOM_STATE, replace=False)
-            ], ignore_index=True)
+
+            # Check if dataset has both classes
+            if len(human_df) == 0 or len(ai_df) == 0:
+                # Dataset has only one class - cannot balance, take unbalanced sample
+                print(f"   ⚠️  {key} has only one class (human: {len(human_df)}, ai: {len(ai_df)}), using unbalanced sampling")
+                n = min(target_n, len(df))
+                sampled = df.sample(n=n, random_state=RANDOM_STATE, replace=False)
+            else:
+                # Dataset has both classes - can balance
+                # limited by the smallest class per source
+                max_balanced = 2 * min(len(human_df), len(ai_df))
+                target_n = min(target_n, max_balanced)
+                n_per_class = target_n // 2
+                sampled = pd.concat([
+                    human_df.sample(n=n_per_class, random_state=RANDOM_STATE, replace=False),
+                    ai_df.sample(n=n_per_class, random_state=RANDOM_STATE, replace=False)
+                ], ignore_index=True)
         else:
             n = min(target_n, len(df))
             sampled = df.sample(n=n, random_state=RANDOM_STATE, replace=False)

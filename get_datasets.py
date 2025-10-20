@@ -78,7 +78,8 @@ dataset_checks = [
     (os.path.join(datasets_dir, 'sunilthite', 'sunilthite_Training_Essay_Data.csv'), "sunilthite CSV"),
     (os.path.join(datasets_dir, 'daigt_v2', 'DAIGT_v2_train_v2_drcat_02.csv'), "DAIGT V2 CSV"),
     (os.path.join(datasets_dir, 'llm_detect_competition', 'kaggleComp_train_essays.csv'), "Kaggle Competition train_essays.csv"),
-    (os.path.join(datasets_dir, 'ah_aitd', 'AHAIRD_Dataset.xlsx'), "AH&AITD XLSX")
+    (os.path.join(datasets_dir, 'ah_aitd', 'AHAIRD_Dataset.xlsx'), "AH&AITD XLSX"),
+    (os.path.join('data', 'uncompressed', 'EvoBench'), "EvoBench dataset directory")
 ]
 
 all_present = True
