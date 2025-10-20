@@ -32,11 +32,15 @@ def extract_lexical_features(text, doc=None):
     # word length
     sentences = re.split(r'[.!?]+', text)
     sentences = [s.strip() for s in sentences if s.strip()]
-    words_in_text = [sentence.split() for sentence in sentences]
+    words_in_text = [word for sentence in sentences for word in sentence.split()]
     word_lengths = [len(word) for word in words_in_text]
     
-    features['average_word_length'] = sum(word_lengths) / len(word_lengths)
-    features['word_length_variance'] = np.var(word_lengths)
+    if word_lengths:
+        features['average_word_length'] = sum(word_lengths) / len(word_lengths)
+        features['word_length_variance'] = np.var(word_lengths)
+    else:
+        features['average_word_length'] = 0.0
+        features['word_length_variance'] = 0.0
     
     # Root Token Type Ratio (normalizing for text length)
     lemmas = ([token.lemma_ for token in doc])
@@ -206,18 +210,20 @@ def extract_burstiness_features(text):
         features['sentence_length_burstiness'] = 0.0
 
     # Additional variation metrics
-    if mu > 0:
-        features['sentence_length_cv'] = sigma / mu  # Coefficient of variation
-    else:
-        features['sentence_length_cv'] = 0.0
+    # correlation r=0.97 with sentence_length_burstiness
+    # if mu > 0:
+    #     features['sentence_length_cv'] = sigma / mu  # Coefficient of variation
+    # else:
+    #     features['sentence_length_cv'] = 0.0
 
     # Range-based features
-    min_len = np.min(sentence_lengths)
-    max_len = np.max(sentence_lengths)
-    if max_len > 0:
-        features['sentence_length_range_ratio'] = (max_len - min_len) / max_len
-    else:
-        features['sentence_length_range_ratio'] = 0.0
+    # correlation r=0.85 with sentence_length_burstiness
+    # min_len = np.min(sentence_lengths)
+    # max_len = np.max(sentence_lengths)
+    # if max_len > 0:
+    #     features['sentence_length_range_ratio'] = (max_len - min_len) / max_len
+    # else:
+    #     features['sentence_length_range_ratio'] = 0.0
 
     # Quartile-based dispersion
     if len(sentence_lengths) >= 4:
@@ -227,11 +233,12 @@ def extract_burstiness_features(text):
         features['sentence_length_iqr'] = 0.0
 
     # Adjacent sentence variation
-    if len(sentence_lengths) >= 2:
-        adjacent_diffs = np.abs(np.diff(sentence_lengths))
-        features['adjacent_sentence_variation'] = np.mean(adjacent_diffs) / mu if mu > 0 else 0.0
-    else:
-        features['adjacent_sentence_variation'] = 0.0
+    # correlation r=0.82 with sentence_length_burstiness
+    # if len(sentence_lengths) >= 2:
+    #     adjacent_diffs = np.abs(np.diff(sentence_lengths))
+    #     features['adjacent_sentence_variation'] = np.mean(adjacent_diffs) / mu if mu > 0 else 0.0
+    # else:
+    #     features['adjacent_sentence_variation'] = 0.0
 
     # Position-based burstiness (compare first vs second half)
     if len(sentences) >= 4:
@@ -252,10 +259,11 @@ def extract_burstiness_features(text):
         short_sentences = np.sum(sentence_lengths < mu * 0.7)
         total_sentences = len(sentence_lengths)
         features['long_sentence_ratio'] = long_sentences / total_sentences
-        features['short_sentence_ratio'] = short_sentences / total_sentences
+        # correlation r=0.84 with sentence_length_burstiness
+        # features['short_sentence_ratio'] = short_sentences / total_sentences
     else:
         features['long_sentence_ratio'] = 0.0
-        features['short_sentence_ratio'] = 0.0
+        # features['short_sentence_ratio'] = 0.0
 
     # Word-level burstiness within sentences
     word_lengths_in_sentences = []

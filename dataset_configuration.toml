@@ -4,7 +4,7 @@ Title = "Combined Dataset Maker"
 
 # Total number of samples to include in the combined dataset
 # if set to MAX, it uses all available samples from enabled sources
-total_samples = 2000
+total_samples = 10000
 
 # if true, saves the combined dataset in Apache Arrow format for efficiency, otherwise saves as csv
 use_arrow = false
@@ -13,7 +13,7 @@ use_arrow = false
 random = true
 
 # if true, balances each source to have equal numbers of human (0) and AI (1) generated texts (does not handle case where this limits the numbe of samples contributed by a source for now, so one mmight end up with less than total_samples in the combined dataset)
-balance_classes = false
+balance_classes = true
 
 # if relaive_portion is not set, it defaults to equal distribution among enabled sources (16.67% each for 6 sources)
 # set relative portion to "0.2" for 20% of the total samples from that source
