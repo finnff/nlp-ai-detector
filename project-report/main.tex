@@ -12,6 +12,7 @@
 \usepackage{graphicx}
 \usepackage{enumitem}
 \usepackage{booktabs}
+\usepackage{multirow}
 % skip huge vertical space after title/author
 \setlength\titlebox{8\baselineskip}
 
@@ -84,12 +85,12 @@ The project approach is two-fold. First, a feature analysis is conducted to unde
 To ensure our model generalizes across diverse English language sources, domains, and LLMs, and to mitigate overfitting to any single dataset's biases, we will utilize multiple datasets for training and evaluation. This approach allows for robust testing of features and hybrids in varied contexts, such as essays, Q\&A, and long-form texts from different LLMs.
 
 \begin{itemize}[noitemsep,nolistsep]
-\item AI Text Detection Pile (Hugging Face): $\sim$1.3M samples, diverse texts (Reddit, Wikipedia, books) \citep{artem9k_ai_text_detection_pile_2023}.
-\item AH\&AITD (Arslan's Human and AI Text Database): $\sim$12k samples, texts across domains (articles, abstracts, stories, news, reviews) \citep{akram2023ahaitd}.
-\item LLM - Detect AI Generated Text Dataset (Kaggle sunilthite): $>$28k essays \citep{thite2023llm}.
-\item LLM - Detect AI Generated Text (Kaggle Competition): $\sim$10k essays \citep{kaggle2023llmdetect}.
-\item DAIGT V2 Train Dataset (Kaggle): 48k samples, essays \citep{deotte2023daigtv2}.
-\item Human ChatGPT Comparison Corpus (HC3): $\sim$24k rows, Q\&A from domains (finance, medicine, law, open) \citep{guo-etal-2023-hc3}.
+% \item AI Text Detection Pile (Hugging Face): diverse texts (Reddit, Wikipedia, books) \citep{artem9k_ai_text_detection_pile_2023}.
+\item AH\&AITD (Arslan's Human and AI Text Database): texts across domains (articles, abstracts, stories, news, reviews) \citep{akram2023ahaitd}.
+\item LLM - Detect AI Generated Text Dataset (Kaggle sunilthite): essays \citep{thite2023llm}.
+% \item LLM - Detect AI Generated Text (Kaggle Competition): essays \citep{kaggle2023llmdetect}.
+\item DAIGT V2 Train Dataset (Kaggle): essays \citep{deotte2023daigtv2}.
+\item Human ChatGPT Comparison Corpus (HC3): Q\&A from domains (finance, medicine, law, open) \citep{guo-etal-2023-hc3}.
 \end{itemize}
 
 \subsection{Dataset Balancing}
@@ -109,11 +110,11 @@ The dataset was balanced using a per-source strategy, where each source contribu
 \toprule
 \textbf{Dataset} & \textbf{Samples} & \textbf{Human (\%)} & \textbf{AI (\%)} \\
 \midrule
-AI Text Detection Pile & 1.39M & 73.8 & 26.2 \\
+% AI Text Detection Pile & 1.39M & 73.8 & 26.2 \\
 HC3 & 85K & 68.5 & 31.5 \\
 sunilthite & 29K & 60.1 & 39.9 \\
 DAIGT V2 & 45K & 61.0 & 39.0 \\
-LLM Detect Competition & 1.4K & 99.8 & 0.2 \\
+% LLM Detect Competition & 1.4K & 99.8 & 0.2 \\
 AH\&AITD & 12K & 50.0 & 50.0 \\
 \bottomrule
 \end{tabular}
@@ -154,6 +155,64 @@ POS tags were extracted using spaCy's coarse-grained POS tags (\texttt{token.pos
 
 \paragraph{Perplexity}
 Perplexity is defined as the inverse test set probability according to the model used for calculating the perplexity score, normalized by the length of the text \citep{jm3}. It is an evaluation of the model's ability to predict uniformly among the set of tokens in a corpus, or in other words how "surprised" the model is by the text, where a lower perplexity indicates more predictable/less surprising text for the model. Perplexity was calculated using EleutherAI's Pythia 1.4B model \citep{biderman2023pythia}, an open-source model trained on the Pile dataset \citep{pile}. The model was downloaded from Hugging Face, and run using the transformers library \citep{wolf-etal-2020-transformers}. This model was chosen for its balance between computational efficiency and generalization due to its diverse training data, which includes web text, books, and academic sources similar to the datasets of this experiment.
+
+
+\paragraph{Burstiness Features}
+% TODO 
+
+\subsubsection{Feature Selection}
+To reduce collinearity, a correlation analysis was performed on all the described extracted features, and from pairs with high pairwise correlation ($r > 0.8$), one feature was dropped. The feature to be dropped was selected based on whether it was correlated with more other features, and which feature would be more informative in the project context. The full list of selected and dropped features is shown in Table \ref{tab:feature-selection}.
+
+\begin{table}[t]
+  \centering
+  \caption{List of selected/considered linguistic features}
+  \footnotesize
+  \begin{tabular*}{\columnwidth}{@{\extracolsep{\fill}}ll}
+  \toprule
+  \textbf{Category} & \textbf{Feature Name} \\
+  \midrule
+  \multirow{4}{*}{Lexical} 
+   & average\_word\_length \\
+   & word\_length\_variance \\
+   & rttr\_root\_type\_token\_ratio \\
+   & hapax\_legomena\_ratio \\
+  \midrule
+  \multirow{5}{*}{Syntactic} 
+   & average\_sentence\_length \\
+   & sentence\_length\_variance \\
+   & average\_parse\_depth \\
+   & maximum\_parse\_depth \\
+   & parse\_depth\_variance \\
+  \midrule
+  \multirow{5}{*}{Punctuation}
+   & comma\_ratio \\
+   & period\_ratio \\
+   & exclamation\_mark\_ratio \\
+   & question\_mark\_ratio \\
+   & punctuation\_per\_word \\
+  \midrule
+  \multirow{2}{*}{Part-of-Speech (POS)} 
+   & pos\_ratio\_<tag> \\
+   & noun\_to\_verb\_ratio \\
+  \midrule
+  \multirow{7}{*}{Burstiness}
+   & sentence\_length\_burstiness \\
+   & sentence\_length\_iqr \\
+   & position\_burstiness\_diff \\
+   & long\_sentence\_ratio \\
+   & word\_length\_burstiness \\
+   & clause\_length\_burstiness \\
+   & \textit{sentence\_length\_cv}\textsuperscript{†} \\
+   & \textit{sentence\_length\_range\_ratio}\textsuperscript{†} \\
+   & \textit{adjacent\_sentence\_variation}\textsuperscript{†} \\
+   & \textit{short\_sentence\_ratio}\textsuperscript{†} \\
+  \midrule
+  Other & perplexity \\
+  \bottomrule
+  \multicolumn{2}{l}{\footnotesize\textsuperscript{†} Removed; high correlation ($r>0.8$) with other feature(s)}
+  \end{tabular}
+  \label{tab:feature-selection}
+  \end{table}
 
 \subsection{Approach 2: Ensemble-Based Detector}
 \label{sec:ensemble-based-detector}
