@@ -311,6 +311,16 @@ Perplexity features were computed using the \texttt{EleutherAI/pythia-1.4b} mode
 \subsection{Results}
 \label{sec:results}
 
+\subsubsection{Feature Importance Analysis}
+Figure \ref{fig:shap-summary} shows the SHAP analysis for the XGBoost classifier. Perplexity is the most discriminative feature, followed by lexical features (hapax legomena ratio, average word length, RTTR). High perplexity values (red) are strongly associated with human-written text, while low perplexity (blue) is strongly associated with AI-generated text. For the lexical features, lower values are associated with human-written text, that is less unique words, shorter words and a smaller range of words is associated with human-written text.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{../plots/xgboost_results_20251106_144223_shap_summary.png}
+\caption{SHAP summary plot for XGBoost classifier. Color indicates feature value (red=high, blue=low); horizontal position shows impact on model output (positive values = AI-generated, negative values = human-written).}
+\label{fig:shap-summary}
+\end{figure}
+
 
 
 
