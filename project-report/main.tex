@@ -247,6 +247,17 @@ Two Naive Bayes classifiers were implemented for the ensemble using sklearn's Mu
 The XGBoost classifier described in section \ref{TODO} was also added to the ensemble. 
 
 
+\subsubsection{Ensemble Methods}
+\label{sec:ensemble-methods}
+Two ensemble methods were implemented: majority voting and stacking.
+
+\paragraph{Majority Voting}
+In the voting approach, each of the five base classifiers independently predicts the class label for a given text. The final prediction of the ensemble is then determined by a majority vote across the classifiers. This simple aggregation reduces individual model errors, increasing robustness against the misclassification of a single model.
+
+\paragraph{Stacking}
+In the stacking approach, the predictions of all base classifiers on the training set are used as features to train a final estimator model. Three models were tested for this final estimator: Logistic Regression, Random Forest, and XGBoost, all implemented using the scikit-learn library \citep{scikit-learn}. Like majority voting, individual errors are reduced, but the use of a final estimator allows the ensemble to learn optimal weights for the different classifiers, potentially improving the overall performance of the ensemble. 
+
+
 \subsection{Evaluation}
 \label{sec:evaluation}
 
