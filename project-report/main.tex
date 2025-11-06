@@ -134,7 +134,6 @@ AH\&AITD & 12K & 50.0 & 50.0 \\
 % Clearly describe the method you employed to address your problem. Mention any libraries utilised, and ensure your explanation is accessible to individuals with fundamental NLP knowledge. Reference relevant literature where applicable. Additionally, mention preprocessing steps and dataset division into training and testing sets (if applicable).
 
 The project methodology consists of two efforts to address different aspects of AI text detection: a feature-based analysis and an ensemble-based detector.
-%  TODO add description of the models trained on the features here
 
 \subsection{Approach 1: Feature-Based Analysis}
 \label{sec:feature-based-analysis}
@@ -244,8 +243,7 @@ A DeBERTa-based classifier using the \texttt{microsoft/deberta-v3-base} model. D
 Two Naive Bayes classifiers were implemented for the ensemble using sklearn's MultinomialNB \citep{scikit-learn} with bag-of-word features implemented using CountVectorizer \citep{scikit-learn}. The first model uses the full vocabulary, while the second model has stopwords removed using sklearn's English stopwords.
 
 \paragraph{XGBoost Classifier}
-The XGBoost classifier described in section \ref{TODO} was also added to the ensemble. 
-
+The XGBoost classifier described in section \ref{sec:feature-based-analysis} was also added to the ensemble, giving the ensemble access to the explicit linguistic features extracted from the text.
 
 \subsubsection{Ensemble Methods}
 \label{sec:ensemble-methods}
