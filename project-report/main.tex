@@ -134,6 +134,7 @@ AH\&AITD & 12K & 50.0 & 50.0 \\
 % Clearly describe the method you employed to address your problem. Mention any libraries utilised, and ensure your explanation is accessible to individuals with fundamental NLP knowledge. Reference relevant literature where applicable. Additionally, mention preprocessing steps and dataset division into training and testing sets (if applicable).
 
 The project methodology consists of two efforts to address different aspects of AI text detection: a feature-based analysis and an ensemble-based detector.
+%  TODO add description of the models trained on the features here
 
 \subsection{Approach 1: Feature-Based Analysis}
 \label{sec:feature-based-analysis}
@@ -221,10 +222,29 @@ To reduce collinearity, a correlation analysis was performed on all the describe
   \label{tab:feature-selection}
   \end{table}
 
+
 \subsection{Approach 2: Ensemble-Based Detector}
 \label{sec:ensemble-based-detector}
-The ensemble-based detector aims to build a practical, robust detector by combining multiple classifiers via majority voting. The ensemble includes: a BERT classifier; a Naive Bayes classifier; potentially a feature-based model (TODO update after discussion!!). The ensemble works by letting each model making a prediction, then "voting", selecting the majority class. This approach increases robustness against adversarial attacks and domain shifts, as fooling the ensemble would require deceiving a majority of its components simultaneously.
-% TODO this need to be refined. And probably there will be weighting involved??
+The ensemble-based detector combines five classifiers to build a practical, robust AI text detector. The classifier outputs are combined using two methods: voting, also known as the weighted majority algorithm, and stacking. The same 80/20 train-test split used in Approach 1 is applied for consistency between the experiments.
+
+\subsubsection{Base Classifiers}
+\label{sec:base-classifiers}
+The ensemble-based detector is made up of multiple text-based classifiers and the feature-based classifiers from Approach 1 (Section \ref{sec:feature-based-analysis}) leveraging different perspectives on the classification task. 
+The LLM-models were downloaded from Hugging Face, and run using the transformers library \citep{wolf-etal-2020-transformers}. 
+
+\paragraph{BERT Classifier}
+BERT captures contextual word representations through its bidirectional transformer architecture, letting it capture semantic patterns in text.
+For this project the BERT classifier available at Hugging Face as \texttt{google-bert/bert-base-uncased} is used \citep{devlin2019bertpretrainingdeepbidirectional}.
+
+\paragraph{DeBERTa Classifier}
+A DeBERTa-based classifier using the \texttt{microsoft/deberta-v3-base} model. DeBERTa uses disentangled attention mechanisms and enhanced mask decoder, this way a word's content can be separated from its position and processed independently, this gives it a clearer sense of what's being said and where in the sentence it's happening, potentially capturing more nuanced linguistic patterns for the AI classification task \citep{he2023debertav3improvingdebertausing}.
+
+
+\paragraph{Naive Bayes Classifiers}
+Two Naive Bayes classifiers were implemented for the ensemble using sklearn's MultinomialNB \citep{scikit-learn} with bag-of-word features implemented using CountVectorizer \citep{scikit-learn}. The first model uses the full vocabulary, while the second model has stopwords removed using sklearn's English stopwords.
+
+\paragraph{XGBoost Classifier}
+The XGBoost classifier described in section \ref{TODO} was also added to the ensemble. 
 
 
 \subsection{Evaluation}
