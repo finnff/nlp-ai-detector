@@ -107,7 +107,7 @@ The dataset was balanced using a per-source strategy, where each source contribu
 
 \begin{table}[t]
 \centering
-\scriptsize
+\footnotesize
 \begin{tabular}{lrcc}
 \toprule
 \textbf{Dataset} & \textbf{Samples} & \textbf{Human (\%)} & \textbf{AI (\%)} \\
@@ -135,7 +135,7 @@ The project methodology consists of two efforts to address different aspects of 
 \label{sec:feature-based-analysis}
 The feature-based analysis focuses on understanding which linguistic and statistical features are most informative in classifying human- vs. AI-generated text. For each text in the dataset, a set of features are extracted (section \ref{sec:feature-extraction}). These features are then used to train three lightweight classifiers: logistic regression and random forest using scikit-learn \citep{scikit-learn}, and XGBoost \citep{xgboost}.
 
-The dataset was balanced as described in section \ref{sec:dataset-balancing}, and an 80/20 train-test split was used for all models. Feature importance rankings were retrieved and compared across these three models, giving insights on which linguistic patterns are consistently important for distinguishing human- vs. AI-generated text.
+The dataset was balanced as described in section \ref{sec:dataset-balancing}. Feature importance rankings were retrieved and compared across these three models, giving insights on which linguistic patterns are consistently important for distinguishing human- vs. AI-generated text.
 
 \subsubsection{Feature Extraction}
 \label{sec:feature-extraction}
@@ -220,7 +220,7 @@ To reduce collinearity, a correlation analysis was performed on all the describe
 
 \subsection{Approach 2: Ensemble-Based Detector}
 \label{sec:ensemble-based-detector}
-The ensemble-based detector combines five classifiers to build a practical, robust AI text detector. The classifier outputs are combined using two methods: voting, also known as the weighted majority algorithm, and stacking. The same 80/20 train-test split used in Approach 1 is applied for consistency between the experiments.
+The ensemble-based detector combines five classifiers to build a practical, robust AI text detector. The classifier outputs are combined using two methods: voting, also known as the weighted majority algorithm, and stacking.
 
 \subsubsection{Base Classifiers}
 \label{sec:base-classifiers}
@@ -255,7 +255,7 @@ In the stacking approach, the predictions of all base classifiers on the trainin
 \subsection{Evaluation}
 \label{sec:evaluation}
 
-\subsubsection{Classification Metrics} All classifiers are evaluated on the held-out test set (20\% of data) using multiple performance metrics: accuracy, precision, recall, F1-score (macro, weighted, and per-class), AUROC (Area Under the ROC Curve). For the ensemble, both individual model performance and complete ensemble performance are reported, to allow comparison between the internal ensemble methods and the overall ensemble performance.
+\subsubsection{Classification Metrics} All classifiers are evaluated on a held-out test set using multiple performance metrics: accuracy, precision, recall, F1-score (macro, weighted, and per-class), AUROC (Area Under the ROC Curve). For the ensemble, both individual model performance and complete ensemble performance are reported, to allow comparison between the internal ensemble methods and the overall ensemble performance.
 
 
 \paragraph{ROC Curve Analysis} ROC curves are generated for all classifiers to visualize the trade-off between true positive rate and false positive rate across different classification thresholds. The AUROC scores give a single scalar metric summarizing classifier performance across all thresholds (0-1, higher values indicating better discrimination between classes). Random baseline performance (AUROC = 0.5) is included for reference.
@@ -273,6 +273,38 @@ SHAP (SHapley Additive exPlanations) values are calculated and visualized for th
 % Describe your experiment setup, evaluation process and report your project's outcomes, such as classification accuracy or any pertinent evaluation metrics. Include any noteworthy findings that arose from your analysis.
 \subsection{Experiment Setup}
 \label{sec:experiment-setup}
+
+\subsubsection{Dataset Configuration}
+The combined dataset consisted of 172,000 samples from the datasets described in Section \ref{sec:data} and was balanced per source and per class as described in Section \ref{sec:dataset-balancing}. The data was split into training (80\%) and test (20\%) sets using stratified sampling with a fixed random seed (42) to ensure reproducibility and maintain class balance across splits, giving 137,600 training samples and 34,400 test samples.
+
+\subsubsection{Model Hyperparameters}
+The models were configured with the following hyperparameters:
+
+\paragraph{Feature-Based Classifiers}
+\begin{itemize}[noitemsep,nolistsep]
+    \item \textbf{Logistic Regression}: Default scikit-learn parameters, random state 42
+    \item \textbf{Random Forest}: Default scikit-learn parameters, max_depth 10, random state 42
+    \item \textbf{XGBoost (feature-based)}: 100 estimators, max depth 6, learning rate 0.1, random state 42, eval_metric 'logloss'
+\end{itemize}
+
+\paragraph{Transformer-Based Classifiers}
+BERT (\texttt{google-bert/bert-base-uncased}) and DeBERTa (\texttt{microsoft/deberta-v3-base}) classifiers were configured identically: maximum sequence length 128 tokens, 3 training epochs, learning rate 0.005, batch size 64. For both models, pre-trained embeddings were frozen and only a linear classification head was trained.
+
+\paragraph{Naive Bayes Classifiers}
+\begin{itemize}[noitemsep,nolistsep]
+    \item \textbf{Naive Bayes (full vocabulary)}: Alpha smoothing parameter 1.0, bag-of-words features using CountVectorizer
+    \item \textbf{Naive Bayes (no stopwords)}: Alpha smoothing parameter 1.0, bag-of-words features using CountVectorizer with stopwords 'english' removed
+\end{itemize}
+
+\paragraph{Ensemble Configuration}
+\begin{itemize}[noitemsep,nolistsep]
+    \item \textbf{Majority Voting}: Unweighted voting across the five base classifiers
+    \item \textbf{Stacking}: meta-classifiers Logistic Regression, Random Forest, and XGBoost with library default parameters
+\end{itemize}
+
+\paragraph{Perplexity Calculation}
+Perplexity features were computed using the \texttt{EleutherAI/pythia-1.4b} model with a maximum sequence length of 1,536 tokens and a stride of 1,536 to avoid overlapping windows.
+
 
 \subsection{Results}
 \label{sec:results}
