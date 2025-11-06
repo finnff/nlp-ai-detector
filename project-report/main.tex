@@ -101,13 +101,9 @@ To ensure our model generalizes across diverse English language sources, domains
 
 \subsection{Dataset Balancing}
 \label{sec:dataset-balancing}
-The datsets showe varying degrees of class imbalance between the target classes human-written (0) and AI-generated (1). With the extremes being the LLM Detect Competition being 99.8\% human-written, while AH\&AITD is perfectly balanced. The dataset's class distribution is shown in Table \ref{tab:dataset-class-distribution}.
+The datsets showed varying degrees of class imbalance between the target classes human-written (0) and AI-generated (1), ranging from 31.5\% AI-generated in the HC3 dataset to 50.0\% AI-generated in the AH\&AITD dataset. The dataset's class distribution is shown in Table \ref{tab:dataset-class-distribution}.
 
-% TODO update/finish after discussion of approach
-The dataset was balanced using a per-source strategy, where each source contributes 50\% human and 50\% AI-generated samples according to its configured proportion of the total dataset size.
-
-
-
+The dataset was balanced using a per-source strategy, where each source contributes an equal number of human-written and AI-generated samples according to its configured proportion of the total dataset size, and limited by the smallest class per source. This ensures balanced representation across both the source datasets and the target classes.
 
 \begin{table}[t]
 \centering
@@ -151,7 +147,7 @@ Four lexical features were chosen and extracted. Average word length and word le
 The Root Type-Token Ratio (RTTR) is a token-type ratio that accounts for document size by normalizing by the square of the document length \citep{REVIRIEGO2024100602}. It was calculated by lemmatizing the text, counting the unique types and dividing by squared text length. A hapax legomenon refers to a word (or expression) occurring only once in a context, and here measures the proportion of words that appear exactly once in a sample.
 
 \paragraph{Syntactic Features}
-Sentence-level statistics were chosen to measure sentence complexity, and include average sentence length and variance. Parse tree depth features (average, maximium and variance) were extracted to measure syntactic complexity. Parse depth is computed as the maximum number of ancestors for any token in a sentence.
+Sentence-level statistics were chosen to measure sentence complexity, and include average sentence length and variance. Parse tree depth features (average, maximum and variance) were extracted to measure syntactic complexity. Parse depth is computed as the maximum number of ancestors for any token in a sentence.
 
 \paragraph{Punctuation Features}
 The ratio of punctuation marks to word count was calculated for comma, period, exclamation mark, and question mark. Additionally, the overall punctuation ratio was included.
@@ -275,8 +271,8 @@ In the stacking approach, the predictions of all base classifiers on the trainin
 \label{sec:ethical-considerations}
 This project develops an AI detection tool, which can be used to detect AI-generated text in a range of domains such as academia, journalism or creative writing. Our intention is that knowledge about whether a text is AI-generated or not can be used in a "positive" way for society in general. In the mentioned domains, this could be help prevent fraud in academic settings, or help journalists flag sources that may be AI-generated and require further investigation. Our tool explicitly tackles the problem of adversarial attacks against AI-detection tools by using an ensemble of classifiers where one will have to fool multiple models to successfully fool the tool. However, it is important to reflect upon how such a tool can be used to improve and create adversarial attacks/tools, both against this specific tool, but also against AI-detectors in general, by training an adversarial model by using this tool in a detector-evasion setup. 
 
-Another ethical consideration is that this tool does not have zero false positive or false negative rates, meaning that there is a risk of human-written text being incorreectly classified as AI-generated, or AI-generated text being incorrectly classified as human-written. 
-Incorrect classification of human-written text can have serious consequences for the individual, such as a student being accused of cheating, possibly leading to failing a course or even being expelled from a university. Incorrect classification of AI-generated text on the other hand can lead to spread of misinformation such as "fake" news or made up scientic findings with a "stamp" of authenticity. To minimize these potential harms, a tool such as this should be deployed with transparent confidence scores and clear disclaimers and explanations about its limitations. 
+Another ethical consideration is that this tool does not have zero false positive or false negative rates, meaning that there is a risk of human-written text being incorrectly classified as AI-generated, or AI-generated text being incorrectly classified as human-written. 
+Incorrect classification of human-written text can have serious consequences for the individual, such as a student being accused of cheating, possibly leading to failing a course or even being expelled from a university. Incorrect classification of AI-generated text on the other hand can lead to spread of misinformation such as "fake" news or made up scientific findings with a "stamp" of authenticity. To minimize these potential harms, a tool such as this should be deployed with transparent confidence scores and clear disclaimers and explanations about its limitations. 
 
 \subsection{Conclusion}
 \label{sec:conclusion}
