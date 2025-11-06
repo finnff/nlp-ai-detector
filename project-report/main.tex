@@ -17,6 +17,8 @@
 \setlength\titlebox{8\baselineskip}
 
 
+%  TODO consider whether it was the same model generating the perplexity scores as the one generating the text, that would be a shortcut..
+
 % Report requireements:
 % ------------------------------- 
 % max 8 pages
@@ -160,11 +162,12 @@ POS tags were extracted using spaCy's coarse-grained POS tags (\texttt{token.pos
 \paragraph{Perplexity}
 Perplexity is defined as the inverse test set probability according to the model used for calculating the perplexity score, normalized by the length of the text \citep{jm3}. It is an evaluation of the model's ability to predict uniformly among the set of tokens in a corpus, or in other words how "surprised" the model is by the text, where a lower perplexity indicates more predictable/less surprising text for the model. Perplexity was calculated using EleutherAI's Pythia 1.4B model \citep{biderman2023pythia}, an open-source model trained on the Pile dataset \citep{pile}. The model was downloaded from Hugging Face, and run using the transformers library \citep{wolf-etal-2020-transformers}. This model was chosen for its balance between computational efficiency and generalization due to its diverse training data, which includes web text, books, and academic sources similar to the datasets of this experiment.
 
-
 \paragraph{Burstiness Features}
-% TODO 
+In statistics, burstiness is a measure of the variability in data points over time, i.e. the variation in the frequency of an event. For each text input, ten burstiness features were originally extracted, measuring variation at the sentence, word, and clause levels. The core burstiness metric uses the Goh-Barabasi coefficient \citep{Goh_2008}: \(B = \frac{\sigma - \mu}{\sigma + \mu}\), where \(\sigma\) is the standard deviation and \(\mu\) is the mean, this measure is designed for analyzing variation in sequential data distributions, which is what we wish to analyze. The formula yields a burstiness score between -1 (uniform) and 1 (highly variable). Features include sentence length burstiness, interquartile range-based dispersion, positional variation (comparing first and second halves), long sentence ratio, word length burstiness, and clause length burstiness. After correlation analysis, six burstiness features were retained.
+
 
 \subsubsection{Feature Selection}
+\label{sec:feature-selection}
 To reduce collinearity, a correlation analysis was performed on all the described extracted features, and from pairs with high pairwise correlation ($r > 0.8$), one feature was dropped. The feature to be dropped was selected based on whether it was correlated with more other features, and which feature would be more informative in the project context. The full list of selected and dropped features is shown in Table \ref{tab:feature-selection}.
 
 \begin{table}[t]
@@ -231,8 +234,6 @@ The ensemble-based detector aims to build a practical, robust detector by combin
 % TODO update with cross-validation approach
 
 \textbf{Feature Importance Analysis:} For the feature-based analysis, we extract and compare feature importances from each model: absolute coefficient values from logistic regression (normalized to sum to 1), Gini importance from random forest, and gain-based importance from XGBoost. By ranking features across models, we identify which linguistic patterns are consistently discriminative regardless of the classification algorithm.
-
-The feature importance analysis compares three classifiers to identify robust signals that generalize across different models (linear vs. tree-based, bagging vs. boosting).
 
 \section{Experiment and Results}
 \label{sec:experiment-results}
