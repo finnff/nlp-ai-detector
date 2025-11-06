@@ -13,6 +13,8 @@
 \usepackage{enumitem}
 \usepackage{booktabs}
 \usepackage{multirow}
+\usepackage{placeins}
+\usepackage{float}
 % skip huge vertical space after title/author
 \setlength\titlebox{8\baselineskip}
 
@@ -285,8 +287,8 @@ The models were configured with the following hyperparameters:
 \paragraph{Feature-Based Classifiers}
 \begin{itemize}[noitemsep,nolistsep]
     \item \textbf{Logistic Regression}: Default scikit-learn parameters, random state 42
-    \item \textbf{Random Forest}: Default scikit-learn parameters, max_depth 10, random state 42
-    \item \textbf{XGBoost (feature-based)}: 100 estimators, max depth 6, learning rate 0.1, random state 42, eval_metric 'logloss'
+    \item \textbf{Random Forest}: Default scikit-learn parameters, max\_depth 10, random state 42
+    \item \textbf{XGBoost (feature-based)}: 100 estimators, max depth 6, learning rate 0.1, random state 42, eval\_metric 'logloss'
 \end{itemize}
 
 \paragraph{Transformer-Based Classifiers}
@@ -307,7 +309,7 @@ BERT (\texttt{google-bert/bert-base-uncased}) and DeBERTa (\texttt{microsoft/deb
 \paragraph{Perplexity Calculation}
 Perplexity features were computed using the \texttt{EleutherAI/pythia-1.4b} model with a maximum sequence length of 1,536 tokens and a stride of 1,536 to avoid overlapping windows.
 
-
+\FloatBarrier
 \subsection{Results}
 \label{sec:results}
 
