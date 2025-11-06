@@ -255,14 +255,30 @@ In the stacking approach, the predictions of all base classifiers on the trainin
 \subsection{Evaluation}
 \label{sec:evaluation}
 
-\textbf{Classification Performance:} All classifiers are evaluated using accuracy, precision, recall, F1-score, and confusion matrices on held-out test sets, for the ensemble both the individual models and the complete ensemble performance is reported.
-% TODO update with cross-validation approach
+\subsubsection{Classification Metrics} All classifiers are evaluated on the held-out test set (20\% of data) using multiple performance metrics: accuracy, precision, recall, F1-score (macro, weighted, and per-class), AUROC (Area Under the ROC Curve). For the ensemble, both individual model performance and complete ensemble performance are reported, to allow comparison between the internal ensemble methods and the overall ensemble performance.
 
-\textbf{Feature Importance Analysis:} For the feature-based analysis, we extract and compare feature importances from each model: absolute coefficient values from logistic regression (normalized to sum to 1), Gini importance from random forest, and gain-based importance from XGBoost. By ranking features across models, we identify which linguistic patterns are consistently discriminative regardless of the classification algorithm.
+
+\paragraph{ROC Curve Analysis} ROC curves are generated for all classifiers to visualize the trade-off between true positive rate and false positive rate across different classification thresholds. The AUROC scores give a single scalar metric summarizing classifier performance across all thresholds (0-1, higher values indicating better discrimination between classes). Random baseline performance (AUROC = 0.5) is included for reference.
+
+
+
+\subsubsection{Feature Importance Analysis:} For the feature-based analysis, we extract and compare feature importances from each model: absolute coefficient values from logistic regression (normalized to sum to 1), Gini importance from random forest, and gain-based importance from XGBoost. By ranking features across models, we identify which linguistic patterns are consistently discriminative regardless of the classification algorithm.
+
+\paragraph{SHAP Summary Plots}
+SHAP (SHapley Additive exPlanations) values are calculated and visualized for the XGBoost classifier to provide interpretable explanations of feature contributions using the shap library \citep{shap_library}. The SHAP summary plots visualize the distribution and magnitude of each feature's impact across all test predictions by the XGBoost model, showing which features are most influential for the model's decisions, and in which direction.
+
 
 \section{Experiment and Results}
 \label{sec:experiment-results}
 % Describe your experiment setup, evaluation process and report your project's outcomes, such as classification accuracy or any pertinent evaluation metrics. Include any noteworthy findings that arose from your analysis.
+\subsection{Experiment Setup}
+\label{sec:experiment-setup}
+
+\subsection{Results}
+\label{sec:results}
+
+
+
 
 \section{Discussion and Conclusion}
 \label{sec:discussion-conclusion}
