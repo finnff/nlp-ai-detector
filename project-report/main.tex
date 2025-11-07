@@ -280,7 +280,26 @@ SHAP (SHapley Additive exPlanations) values are calculated and visualized for th
 \label{sec:experiment-setup}
 
 \subsubsection{Dataset Configuration}
-The combined dataset consisted of 172,000 samples from the datasets described in Section \ref{sec:data} and was balanced per source and per class as described in Section \ref{sec:dataset-balancing}. The data was split into training (80\%) and test (20\%) sets using stratified sampling with a fixed random seed (42) to ensure reproducibility and maintain class balance across splits, giving 137,600 training samples and 34,400 test samples.
+The combined dataset consisted of 112,848 samples from the datasets described in Section \ref{sec:data} and was balanced per source and per class as described in Section \ref{sec:dataset-balancing}. Table \ref{tab:combined-dataset} shows the contribution of each source to the final combined dataset. The data was split into training (80\%) and test (20\%) sets using stratified sampling with a fixed seed to ensure reproducibility and maintain class balance across splits, giving 90,278 training samples and 22,570 test samples.
+
+\begin{table}[t]
+\centering
+\footnotesize
+\begin{tabular}{lrr}
+\toprule
+\textbf{Dataset} & \textbf{Samples} & \textbf{Proportion (\%)} \\
+\midrule
+HC3 & 43,000 & 38.1 \\
+DAIGT V2 & 34,994 & 31.0 \\
+sunilthite & 23,274 & 20.6 \\
+AH\&AITD & 11,580 & 10.3 \\
+\midrule
+\textbf{Total} & \textbf{112,848} & \textbf{100.0} \\
+\bottomrule
+\end{tabular}
+\caption{Combined dataset composition}
+\label{tab:combined-dataset}
+\end{table}
 
 \subsubsection{Model Hyperparameters}
 The models were configured with the following hyperparameters:
@@ -350,6 +369,11 @@ Incorrect classification of human-written text can have serious consequences for
 \subsection{Conclusion}
 \label{sec:conclusion}
 
+% \textbf{RQ1:} \textit{Which linguistic or statistical features are most effective in distinguishing human- vs. AI-generated text?}
+
+
+% \textbf{RQ2:} \textit{How does ensemble-based classification improve robustness compared to individual classifiers?}
+
 
 
 \bibliographystyle{acl_natbib}
@@ -361,3 +385,38 @@ Incorrect classification of human-written text can have serious consequences for
 \section{Example appendix}
 
 \end{document}
+
+
+
+
+
+% Title: Combined Dataset Maker 20/10
+% Total samples: 172000
+% Use arrow: False
+% Random: False
+% Balance classes: True
+
+% 📊 Final combined dataset info:
+%    Shape: (112848, 3)
+%    Columns: ['text', 'generated', 'perplexity']
+%    🧠 Perplexity available for 112844/112848 samples (100.0%)
+% 💾 Dataset metadata saved: data/datasets/dataset_metadata.json
+
+% Sources:
+% [ENABLED] hc3                      :   85431 total (H: 58546, AI: 26885) → 43000 samples (50.33% of source, 38.10% of combined)
+% [ENABLED] daigt_v2                 :   44868 total (H: 27371, AI: 17497) → 34994 samples (77.99% of source, 31.01% of combined)
+% [ENABLED] sunilthite               :   29145 total (H: 17508, AI: 11637) → 23274 samples (79.86% of source, 20.62% of combined)
+% [ENABLED] ah_aitd                  :   11580 total (H:  5790, AI:  5790) → 11580 samples (100.00% of source, 10.26% of combined)
+% Combined Dataset Head: 
+
+%                                                 text  generated  perplexity
+% 0  It is possible that the pain you are experienc...          1    4.157336
+% 1  Okay, I'll give it a shot! Here's my essay:\n\...          1    4.956675
+% 2  The importance of the thermal properties of in...          1   26.813772
+% 3  Depends on the drug . Heroin and other narcoti...          0   14.745926
+% 4  What object ? Mercury does n't have any satell...          0  105.859143
+
+
+% Shape: (112848, 3)
+% Human Written: 56424 (50.00%)
+% Ai Generated: 56424 (50.00%)
