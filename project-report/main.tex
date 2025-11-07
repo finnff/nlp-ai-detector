@@ -85,8 +85,11 @@ The project approach is two-fold. First, a feature analysis is conducted to unde
 \section{Related Work}
 \label{sec:related-work}
 % Although not an exhaustive literature review, discuss a few key papers that tackled similar problems. Highlight their data and methods, outcomes, and outline the points of distinction between your approach and theirs.
-%  TODO probably add something more here. 
-Recent surveys on AI text detection indicate that hybrid approaches, combining statistical and neural methods, often outperform single-modality detectors in robustness and generalization \citep{wu-etal-2025-survey, su2024robustdetectionllmgeneratedtext}. These findings motivate our dual approach: first analyzing individual linguistic and statistical features for interpretability, and second combining multiple classifiers in an ensemble to improve robustness against adversarial attacks and domain shifts.
+\citet{wu-etal-2025-survey} conducted a comprehensive review of the state-of-the-art in LLM-generated text detection in 2025. They classify LLM-generated text detectors into three categories: watermarking technology where the generator includes identifiable patterns in the text to regulate and detect its origin; statistics-based detectors which analyze inherent patterns of the generated text; and neural-based detectors which use machine learning models to classify the generated text. The detectors in the survey report performance using different metrics, but among the best performing are the two statistics-based detectors "Ghostbuster" with average F1 score of 99.0 and GECScore with an AUROC of 98.62\%. Among the neural-based detectors, DNA-GPT achieved "nearly 100\%" detection accuracy in distinguishing between human-written and GPT-generated texts on multiple datasets. The watermarking methods are noted for their robustness against adversarial attacks, e.g. reliable classification when up to 50\% of the tokens were modified, and low false-positive rates, making them a promising approach for reliable detection. 
+
+However, robustness against adversarial attacks remains a significant challenge. \citet{weber-wulff_testing_2023} examine the reliability of AI text detection tools in academic settings and found that obfuscation techniques, e.g. manual editing and machine paraphrasing, significantly reduce the accuracy of detection tools, with approximately 50\% of the texts that had undergone some type of post-generation editing being misclassified as human-written. Similar results, with detectors being less accurate when subjected to adversarial attacks, are reported by \citet{wu-etal-2025-survey} and \citet{pudasaini_survey_2025}. 
+
+Multiple surveys indicate that hybrid approaches, combining statistical and neural methods, often outperform single-modality detectors in robustness and generalization \citep{wu-etal-2025-survey, su2024robustdetectionllmgeneratedtext}. These findings motivate our dual approach: first analyzing individual linguistic and statistical features for interpretability, and second combining multiple classifiers in an ensemble to improve robustness against adversarial attacks and domain shifts.
 
 \section{Data}
 \label{sec:data}
@@ -287,8 +290,8 @@ The models were configured with the following hyperparameters:
 \paragraph{Feature-Based Classifiers}
 \begin{itemize}[noitemsep,nolistsep]
     \item \textbf{Logistic Regression}: Default scikit-learn parameters, random state 42
-    \item \textbf{Random Forest}: Default scikit-learn parameters, max\_depth 10, random state 42
-    \item \textbf{XGBoost (feature-based)}: 100 estimators, max depth 6, learning rate 0.1, random state 42, eval\_metric 'logloss'
+    \item \textbf{Random Forest}: Default scikit-learn parameters, max_depth 10, random state 42
+    \item \textbf{XGBoost (feature-based)}: 100 estimators, max depth 6, learning rate 0.1, random state 42, eval_metric 'logloss'
 \end{itemize}
 
 \paragraph{Transformer-Based Classifiers}
