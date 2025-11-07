@@ -74,13 +74,11 @@ For this project, we explore which linguistic or statistical features are most e
 
 The project approach is two-fold. First, a feature analysis is conducted to understand which classic linguistic and statistical features, e.g. sentence complexity, punctuation patterns, lexical diversity, perplexity, and part-of-speech (POS) distributions, are most discriminative. Multiple lightweight classifiers (logistic regression, random forest, XGBoost) are trained on the extracted linguistic/statistical features and their feature importance rankings are compared to identify important/robust signals. Second, the project explores how to make an AI-detector harder to fool in a real world-deployment scenario, specifically, increasing its robustness against adversarial attacks and domain shifts. This is done by combining multiple classification approaches (including neural methods like BERT and statistical methods like Naive Bayes) via majority voting. 
 
-% TODO discuss whether we should include the best of the feature-based models in this ensemble approach. Will require some work on the pipeline. 
+This project addresses two research questions:
 
-% \textit{RQ: Which linguistic or statistical features  are most effective in distinguishing human- vs. AI-generated text?}
+\textbf{RQ1:} \textit{Which linguistic or statistical features are most effective in distinguishing human- vs. AI-generated text?}
 
-\textit{RQ1: Which linguistic or statistical features are most effective in distinguishing human- vs. AI-generated text?}
-% adding a second research question about the ensemble-based approach.
-\textit{RQ2: How does ensemble-based classification improve robustness compared to individual classifiers?}
+\textbf{RQ2:} \textit{How does ensemble-based classification improve robustness compared to individual classifiers?}
 
 \section{Related Work}
 \label{sec:related-work}
@@ -290,8 +288,8 @@ The models were configured with the following hyperparameters:
 \paragraph{Feature-Based Classifiers}
 \begin{itemize}[noitemsep,nolistsep]
     \item \textbf{Logistic Regression}: Default scikit-learn parameters, random state 42
-    \item \textbf{Random Forest}: Default scikit-learn parameters, max_depth 10, random state 42
-    \item \textbf{XGBoost (feature-based)}: 100 estimators, max depth 6, learning rate 0.1, random state 42, eval_metric 'logloss'
+    \item \textbf{Random Forest}: Default scikit-learn parameters, max\_depth 10, random state 42
+    \item \textbf{XGBoost (feature-based)}: 100 estimators, max depth 6, learning rate 0.1, random state 42, eval\_metric 'logloss'
 \end{itemize}
 
 \paragraph{Transformer-Based Classifiers}
