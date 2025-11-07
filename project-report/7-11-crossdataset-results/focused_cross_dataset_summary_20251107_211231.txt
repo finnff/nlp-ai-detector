@@ -1,0 +1,88 @@
+====================================================================================================
+ENHANCED CROSS-DATASET EVALUATION SUMMARY
+====================================================================================================
+Timestamp: 20251107_211231
+Classifiers: xgboost, deberta, naive_bayes, bert, voting_ensemble, stacking_ensemble
+Experiment Type: Leave-One-Dataset-Out Cross-Validation
+Dataset Balancing: Unbalanced
+Datasets Tested: daigt_v2, sunilthite (high-performing focus)
+Datasets Trained: hc3, daigt_v2, sunilthite, ah_aitd
+Features: BERT integration, Comprehensive logging, AUROC visualization
+
+RESULTS FOR DATASET: DAIGT_V2
+--------------------------------------------------------------------------------
+Classifier           Accuracy   Macro F1   Weighted F1  AUROC   
+--------------------------------------------------------------------------------
+xgboost              0.8459     0.8364     0.8451       0.9224  
+deberta              0.9675     0.9660     0.9676       0.9923  
+naive_bayes          0.7880     0.7438     0.7673       0.8996  
+bert                 0.8674     0.8556     0.8647       0.9432  
+voting_ensemble      0.8740     0.8583     0.8688       N/A     
+stacking_ensemble    0.8459     0.8364     0.8451       N/A     
+
+RESULTS FOR DATASET: SUNILTHITE
+--------------------------------------------------------------------------------
+Classifier           Accuracy   Macro F1   Weighted F1  AUROC   
+--------------------------------------------------------------------------------
+xgboost              0.8093     0.7912     0.8032       0.7967  
+deberta              0.9639     0.9627     0.9640       0.9948  
+naive_bayes          0.8309     0.8064     0.8199       0.9817  
+bert                 0.9177     0.9133     0.9171       0.9740  
+voting_ensemble      0.9038     0.8950     0.9010       N/A     
+stacking_ensemble    0.8426     0.8233     0.8347       N/A     
+
+SUMMARY STATISTICS BY CLASSIFIER:
+================================================================================
+
+XGBOOST:
+----------------------------------------
+Mean Accuracy:     0.8276 ± 0.0183
+Mean Macro F1:     0.8138 ± 0.0226
+Mean Weighted F1:  0.8242 ± 0.0209
+Mean AUROC:        0.8595 ± 0.0629
+Number of Experiments: 2
+
+DEBERTA:
+----------------------------------------
+Mean Accuracy:     0.9657 ± 0.0018
+Mean Macro F1:     0.9643 ± 0.0016
+Mean Weighted F1:  0.9658 ± 0.0018
+Mean AUROC:        0.9936 ± 0.0012
+Number of Experiments: 2
+
+NAIVE_BAYES:
+----------------------------------------
+Mean Accuracy:     0.8095 ± 0.0214
+Mean Macro F1:     0.7751 ± 0.0313
+Mean Weighted F1:  0.7936 ± 0.0263
+Mean AUROC:        0.9407 ± 0.0411
+Number of Experiments: 2
+
+BERT:
+----------------------------------------
+Mean Accuracy:     0.8925 ± 0.0252
+Mean Macro F1:     0.8844 ± 0.0288
+Mean Weighted F1:  0.8909 ± 0.0262
+Mean AUROC:        0.9586 ± 0.0154
+Number of Experiments: 2
+
+VOTING_ENSEMBLE:
+----------------------------------------
+Mean Accuracy:     0.8889 ± 0.0149
+Mean Macro F1:     0.8767 ± 0.0183
+Mean Weighted F1:  0.8849 ± 0.0161
+Number of Experiments: 2
+
+STACKING_ENSEMBLE:
+----------------------------------------
+Mean Accuracy:     0.8442 ± 0.0016
+Mean Macro F1:     0.8298 ± 0.0065
+Mean Weighted F1:  0.8399 ± 0.0052
+Number of Experiments: 2
+
+
+BEST PERFORMING CLASSIFIERS:
+==================================================
+Best Mean Accuracy: deberta (0.9657)
+Best Mean Macro F1: deberta (0.9643)
+Best Mean AUROC: deberta (0.9936)

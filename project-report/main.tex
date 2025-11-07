@@ -65,8 +65,7 @@
 \begin{document}
 \maketitle
 \begin{abstract}
-  % Offer a concise overview of your entire report, covering context, objectives, methods, findings, and significance. Aim for 150-250 words.
-% TODO
+The proliferation of large language models necessitates reliable detection of AI-generated text in academic and journalistic contexts. This study investigates which linguistic features best distinguish human from AI-generated text (RQ1) and whether ensemble methods improve robustness (RQ2). We extract 40 linguistic and statistical features from 112,848 samples across four diverse datasets and train multiple classifiers. XGBoost achieves 97.62\% accuracy (0.997 AUROC) on within-dataset testing, but performance drops to 82.76\% on cross-dataset evaluation, revealing severe overfitting. In contrast, DeBERTa maintains 96.57\% accuracy across datasets (0.994 AUROC), demonstrating superior generalization. Perplexity emerges as the most discriminative feature across all models (importance: 0.334-0.430), with higher perplexity indicating human text. Our voting ensemble achieves 95.58\% within-dataset accuracy and 88.89\% cross-dataset accuracy, providing robust performance through classifier diversity. Results demonstrate that transformer-based approaches generalize substantially better than feature-based methods for practical deployment, though simple ensemble voting further enhances robustness across domains.
 \end{abstract}
 
 \section{Introduction}
@@ -100,30 +99,9 @@ To ensure our model generalizes across diverse English language sources, domains
 
 \subsection{Dataset Balancing}
 \label{sec:dataset-balancing}
-The datasets showed varying degrees of class imbalance between the target classes human-written (0) and AI-generated (1), ranging from 31.5\% AI-generated in the HC3 dataset to 50.0\% AI-generated in the AH\&AITD dataset. The dataset's class distribution is shown in Table \ref{tab:dataset-class-distribution}.
+The datasets showed varying degrees of class imbalance between the target classes human-written (0) and AI-generated (1), ranging from 31.5\% AI-generated in the HC3 dataset to 50.0\% AI-generated in the AH\&AITD dataset. Dataset class distributions are detailed in Appendix \ref{sec:dataset-details}.
 
-The dataset was balanced using a per-source strategy, where each source contributes an equal number of human-written and AI-generated samples according to its configured proportion of the total dataset size, and limited by the smallest class per source. This ensures balanced representation across both the source datasets and the target classes.
-% NOTE this table could totally be moved to appendix.
-\begin{table}[t]
-\centering
-\footnotesize
-\begin{tabular}{lrcc}
-\toprule
-\textbf{Dataset} & \textbf{Samples} & \textbf{Human (\%)} & \textbf{AI (\%)} \\
-\midrule
-% AI Text Detection Pile & 1.39M & 73.8 & 26.2 \\
-HC3 & 85K & 68.5 & 31.5 \\
-sunilthite & 29K & 60.1 & 39.9 \\
-DAIGT V2 & 45K & 61.0 & 39.0 \\
-% LLM Detect Competition & 1.4K & 99.8 & 0.2 \\
-AH\&AITD & 12K & 50.0 & 50.0 \\
-\bottomrule
-\end{tabular}
-\caption{Dataset size and class distributions}
-\label{tab:dataset-class-distribution}
-\end{table}
-
-Building on this balanced dataset foundation, we now describe our methodological approach for AI text detection, which combines feature-based analysis with ensemble-based classification.
+The dataset was balanced using a per-source strategy, where each source contributes an equal number of human-written and AI-generated samples according to its configured proportion of the total dataset size, and limited by the smallest class per source. This ensures balanced representation across both the source datasets and the target classes. Building on this balanced dataset foundation, we now describe our methodological approach for AI text detection, which combines feature-based analysis with ensemble-based classification.
 
 \section{Method}
 \label{sec:method}
@@ -144,7 +122,7 @@ For each entry in the dataset, the following features were extracted using the s
 \paragraph{Lexical Features}
 Four lexical features were chosen and extracted. Average word length and word length variance to measure vocabulary complexity. Root Type-Token Ratio (RTTR), and hapax legomena ratio to measure lexical diversity.
 
-The Root Type-Token Ratio (RTTR) is a token-type ratio that accounts for document size by normalizing by the square of the document length \citep{REVIRIEGO2024100602}. It was calculated by lemmatizing the text, counting the unique types and dividing by squared text length. A hapax legomenon refers to a word (or expression) occurring only once in a context, and here measures the proportion of words that appear exactly once in a sample.
+The Root Type-Token Ratio (RTTR) is a token-type ratio that accounts for document size by normalizing by the square root of the document length \citep{REVIRIEGO2024100602}, defined as RTTR = Types / $\sqrt{\mathrm{Tokens}}$. It was calculated by lemmatizing the text, counting the unique types and dividing by the square root of text length. A hapax legomenon refers to a word (or expression) occurring only once in a context, and here measures the proportion of words that appear exactly once in a sample.
 
 \paragraph{Syntactic Features}
 Sentence-level statistics were chosen to measure sentence complexity, and include average sentence length and variance. Parse tree depth features (average, maximum and variance) were extracted to measure syntactic complexity. Parse depth is computed as the maximum number of ancestors for any token in a sentence.
@@ -156,7 +134,7 @@ The ratio of punctuation marks to word count was calculated for comma, period, e
 POS tags were extracted using spaCy's coarse-grained POS tags (\texttt{token.pos\_}) rather than fine-grained tags (\texttt{token.tag\_}) to capture overall patterns in word class usage, fine grained tags were excluded as they may be too specific for the objective, and yield sparse data. The ratio of each POS category (noun, verb, adjective, adverb, etc.) to total tokens was calculated as well as a noun-to-verb ratio as a derived feature.
 
 \paragraph{Perplexity}
-Perplexity is defined as the inverse test set probability according to the model used for calculating the perplexity score, normalized by the length of the text \citep{jm3}. It is an evaluation of the model's ability to predict uniformly among the set of tokens in a corpus, or in other words how "surprised" the model is by the text, where a lower perplexity indicates more predictable/less surprising text for the model. Perplexity was calculated using EleutherAI's Pythia 1.4B model \citep{biderman2023pythia}, an open-source model trained on the Pile dataset \citep{pile}. Pythia was specifically chosen for its reproducibility and transparency in training, providing deduplicated data variants that ensure clean perplexity signals without contamination artifacts from memorized training data \citep{biderman2023pythia}. This makes it ideal for AI text detection where we need to distinguish true predictive patterns from artificial recognition of memorized content.
+Perplexity is defined as $\mathrm{PPL} = \exp\left(-\frac{1}{N}\sum_{i=1}^N \log p(w_i)\right)$, where $N$ is the number of tokens and $p(w_i)$ is the model's predicted probability for token $i$ \citep{jm3}. It measures how ``surprised'' the model is by the text: lower perplexity indicates more predictable text for the model. Perplexity was calculated using EleutherAI's Pythia 1.4B model \citep{biderman2023pythia}, an open-source model trained on the Pile dataset \citep{pile}. Pythia was specifically chosen for its reproducibility and transparency in training, providing deduplicated data variants that ensure clean perplexity signals without contamination artifacts from memorized training data \citep{biderman2023pythia}. This makes it ideal for AI text detection where we need to distinguish true predictive patterns from artificial recognition of memorized content.
 
 \paragraph{Burstiness Features}
 In statistics, burstiness is a measure of the variability in data points over time. Burstiness captures the "clumpiness" in text structure, where AI text might show more uniform patterns while human writing exhibits greater variation. The core burstiness metric uses the Goh-Barabasi coefficient \citep{Goh_2008}: \(B = \frac{\sigma - \mu}{\sigma + \mu}\), where \(\sigma\) is the standard deviation and \(\mu\) is the mean, this measure is designed for analyzing variation in sequential data distributions, which is what we wish to analyze. The formula yields a burstiness score between -1 (uniform) and 1 (highly variable). For each text input, ten burstiness features were originally extracted, measuring variation at the sentence, word, and clause levels, including sentence length burstiness, positional variation (comparing first and second halves) and clause length burstiness. After correlation analysis, six burstiness features were retained.
@@ -168,19 +146,19 @@ To reduce collinearity, a correlation analysis was performed on all the describe
 
 \begin{table}[t]
   \centering
-  \caption{List of selected/considered linguistic features}
+  \caption{List of selected/considered linguistic features (40 features total). Dropped features (marked with †) were selected for redundancy while prioritizing informativeness.}
   \footnotesize
   \begin{tabular*}{\columnwidth}{@{\extracolsep{\fill}}ll}
   \toprule
   \textbf{Category} & \textbf{Feature Name} \\
   \midrule
-  \multirow{4}{*}{Lexical} 
+  \multirow{4}{*}{Lexical}
    & average\_word\_length \\
    & word\_length\_variance \\
    & rttr\_root\_type\_token\_ratio \\
    & hapax\_legomena\_ratio \\
   \midrule
-  \multirow{5}{*}{Syntactic} 
+  \multirow{5}{*}{Syntactic}
    & average\_sentence\_length \\
    & sentence\_length\_variance \\
    & average\_parse\_depth \\
@@ -194,7 +172,7 @@ To reduce collinearity, a correlation analysis was performed on all the describe
    & question\_mark\_ratio \\
    & punctuation\_per\_word \\
   \midrule
-  \multirow{2}{*}{Part-of-Speech (POS)} 
+  \multirow{2}{*}{Part-of-Speech (POS)}
    & pos\_ratio\_<tag> \\
    & noun\_to\_verb\_ratio \\
   \midrule
@@ -255,6 +233,13 @@ In the stacking approach, the predictions of all base classifiers on the trainin
 \subsection{Evaluation}
 \label{sec:evaluation}
 
+\subsubsection{Evaluation Strategy}
+To distinguish between optimistic within-distribution performance and real-world generalization, we employ two complementary evaluation approaches.
+
+\textbf{Within-dataset evaluation} uses an 80/20 stratified train-test split on the combined balanced dataset, establishing performance upper bounds when training and deployment distributions align.
+
+\textbf{Cross-dataset evaluation} employs leave-one-dataset-out cross-validation: training on three source datasets and testing on the fourth held-out dataset (10,000 samples per test). This stringent approach reveals whether models learn generalizable linguistic patterns or merely overfit to dataset-specific artifacts. The substantial distribution shift simulates real-world deployment where text sources are heterogeneous, providing a realistic assessment of practical reliability.
+
 \subsubsection{Classification Metrics} All classifiers are evaluated on a held-out test set using multiple performance metrics: accuracy, precision, recall, F1-score (macro, weighted, and per-class), and AUROC (Area Under the ROC Curve). AUROC provides a threshold-independent measure of classifier performance across all classification thresholds (0-1, with higher values indicating better discrimination between classes), with random baseline performance at 0.5. For the ensemble, both individual model performance and complete ensemble performance are reported, to allow comparison between the internal ensemble methods and the overall ensemble performance.
 
 \subsubsection{Feature Importance Analysis} For the feature-based analysis, we extract and compare feature importances from each model: absolute coefficient values from logistic regression (normalized to sum to 1), Gini importance from random forest, and gain-based importance from XGBoost. By ranking features across models, we identify which linguistic patterns are consistently discriminative regardless of the classification algorithm.
@@ -262,36 +247,14 @@ In the stacking approach, the predictions of all base classifiers on the trainin
 \paragraph{SHAP Summary Plots}
 SHAP (SHapley Additive exPlanations) values are calculated and visualized for the XGBoost classifier to provide interpretable explanations of feature contributions using the shap library \citep{shap_library}. The SHAP summary plot visualizes the distribution and magnitude of each feature's impact across all test predictions by the XGBoost model, showing which features are most influential for the model's decisions, and in which direction.
 
-\section{Experiment and Results}
-\label{sec:experiment-results}
-% Describe your experiment setup, evaluation process and report your project's outcomes, such as classification accuracy or any pertinent evaluation metrics. Include any noteworthy findings that arose from your analysis.
-\subsection{Experiment Setup}
+\section{Experimental Setup}
 \label{sec:experiment-setup}
 The complete implementation of this project is available in the github repository nlp-ai-detector \citep{githubrepository}.
 
-\subsubsection{Dataset Configuration}
-The combined dataset consisted of 112,848 samples from the datasets described in Section \ref{sec:data} and was balanced per source and per class as described in Section \ref{sec:dataset-balancing}. Table \ref{tab:combined-dataset} shows the contribution of each source to the final combined dataset. The data was split into training (80\%) and test (20\%) sets using stratified sampling with a fixed seed to ensure reproducibility and maintain class balance across splits, giving 90,278 training samples and 22,570 test samples.
+\subsection{Dataset Configuration}
+The combined dataset consisted of 112,848 samples from the datasets described in Section \ref{sec:data} and was balanced per source and per class as described in Section \ref{sec:dataset-balancing}. Dataset composition is detailed in Appendix \ref{sec:dataset-details}. The data was split into training (80\%) and test (20\%) sets using stratified sampling with a fixed seed to ensure reproducibility and maintain class balance across splits, giving 90,278 training samples and 22,570 test samples.
 
-\begin{table}[t]
-\centering
-\footnotesize
-\begin{tabular}{lrr}
-\toprule
-\textbf{Dataset} & \textbf{Samples} & \textbf{Proportion (\%)} \\
-\midrule
-HC3 & 43,000 & 38.1 \\
-DAIGT V2 & 34,994 & 31.0 \\
-sunilthite & 23,274 & 20.6 \\
-AH\&AITD & 11,580 & 10.3 \\
-\midrule
-\textbf{Total} & \textbf{112,848} & \textbf{100.0} \\
-\bottomrule
-\end{tabular}
-\caption{Combined dataset composition}
-\label{tab:combined-dataset}
-\end{table}
-
-\subsubsection{LLM Setup}
+\subsection{LLM Setup}
 The LLM-models were downloaded from Hugging Face, and run using the transformers library \citep{wolf-etal-2020-transformers}. 
 The models were configured with the following hyperparameters:
 
@@ -311,13 +274,13 @@ The majority voting ensemble used unweighted voting across the five base classif
 Perplexity features were computed using the \texttt{EleutherAI/pythia-1.4b} model with a maximum sequence length of 1,536 tokens and a stride of 1,536 to avoid overlapping windows.
 
 % \FloatBarrier
-\subsection{Results}
+\section{Results}
 \label{sec:results}
 
-\subsubsection{Feature-Based Analysis}
+\subsection{Feature-Based Classifiers}
 
 \paragraph{Classification Performance}
-Table \ref{tab:feature-based-results} presents the performance of the three feature-based classifiers on the test set (22,570 samples, 11,285 per class). XGBoost achieved the highest performance with 97.45\% accuracy and 0.997 AUROC, followed by Random Forest (96.06\% accuracy, 0.993 AUROC) and Logistic Regression (92.82\% accuracy, 0.972 AUROC). 
+Table \ref{tab:feature-based-results} presents the performance of the three feature-based classifiers on the test set (22,570 samples, 11,285 per class). XGBoost achieved the highest performance with 97.62\% accuracy and 0.997 AUROC, followed by Random Forest (96.06\% accuracy, 0.993 AUROC) and Logistic Regression (92.82\% accuracy, 0.972 AUROC). 
 \begin{table}[t]
 \centering
 \footnotesize
@@ -326,7 +289,7 @@ Table \ref{tab:feature-based-results} presents the performance of the three feat
 \toprule
 \textbf{Metric} & \textbf{Logistic Regr.} & \textbf{Random Forest} & \textbf{XGBoost} \\
 \midrule
-Accuracy & 0.928 & 0.961 & \textbf{0.975} \\
+Accuracy & 0.928 & 0.961 & \textbf{0.976} \\
 AUROC & 0.972 & 0.993 & \textbf{0.997} \\
 \midrule
 \multicolumn{4}{@{}l}{\textit{Human-Written}} \\
@@ -383,10 +346,61 @@ Figure \ref{fig:shap-summary} shows the SHAP analysis for the XGBoost classifier
 \label{fig:shap-summary}
 \end{figure}
 
-\subsubsection{Ensemble-Based Detector}
+\subsection{Ensemble Classifier}
+\label{sec:ensemble-classifier}
 
-\paragraph{Classification Performance}
-Table \ref{tab:ensemble-component-results} presents the performance of all classifiers in the ensemble-based detector. The feature-based XGBoost classifier achieved the highest performance (97.5\% accuracy, 0.997 AUROC). Among the text-based classifiers, DeBERTa performed best (94.2\% accuracy, 0.988 AUROC), followed by BERT (92.1\% accuracy, 0.975 AUROC).
+Table \ref{tab:within-dataset-ensemble} presents the within-dataset performance of all classifiers in the ensemble-based detector on the held-out test set (22,570 samples). XGBoost achieved the highest individual performance (97.62\% accuracy, 0.997 AUROC), followed by DeBERTa (94.24\% accuracy, 0.988 AUROC) and BERT (91.33\% accuracy, 0.972 AUROC). The voting ensemble achieved 95.58\% accuracy, demonstrating robust aggregation across diverse classifiers, while the stacking ensemble matched XGBoost's performance (97.62\% accuracy).
+
+\begin{table}[t]
+\centering
+\footnotesize
+\begin{tabular}{@{}lccc@{}}
+\toprule
+\textbf{Classifier} & \textbf{Accuracy} & \textbf{Macro F1} & \textbf{AUROC} \\
+\midrule
+Random Classifier & 0.501 & 0.501 & 0.500 \\
+\midrule
+Naive Bayes & 0.860 & 0.860 & 0.925 \\
+BERT & 0.913 & 0.913 & 0.972 \\
+DeBERTa & 0.942 & 0.942 & 0.988 \\
+XGBoost & \textbf{0.976} & \textbf{0.976} & \textbf{0.997} \\
+\midrule
+Voting Ensemble & 0.956 & 0.956 & N/A \\
+Stacking Ensemble & \textbf{0.976} & \textbf{0.976} & N/A \\
+\bottomrule
+\end{tabular}
+\caption{Within-dataset performance of ensemble component models. Best values in bold.}
+\label{tab:within-dataset-ensemble}
+\end{table}
+
+The near-perfect AUROC values (0.972-0.997) indicate excellent classification performance on the within-dataset test set, with XGBoost and DeBERTa demonstrating superior discrimination capability compared to baseline methods (see Appendix \ref{sec:auroc-curves} for detailed AUROC curves).
+
+\subsection{Cross-Dataset Evaluation}
+As described in Section \ref{sec:evaluation}, we performed leave-one-dataset-out cross-validation, training on three datasets and testing on the held-out one (10,000 test samples per dataset). These results highlight a reversal in model rankings under distribution shifts. Table \ref{tab:cross-dataset-results} compares within-dataset and cross-dataset performance, revealing significant changes in relative performance across models.
+
+\begin{table}[t]
+\centering
+\footnotesize
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+\textbf{Model} & \textbf{Within} & \textbf{Cross} & \textbf{Change} & \textbf{Variance} \\
+               & \textbf{Acc (\%)} & \textbf{Acc (\%)} & \textbf{(\%)} & \\
+\midrule
+XGBoost & 97.62 & 82.76 & -14.86 & ±1.83 \\
+DeBERTa & 94.24 & 96.57 & +2.33 & ±0.18 \\
+BERT & 91.33 & 89.26 & -2.07 & ±2.52 \\
+Naive Bayes & 86.00 & 80.95 & -5.05 & ±2.14 \\
+Voting Ensemble & 95.58 & 88.89 & -6.69 & ±1.49 \\
+Stacking Ensemble & 97.62 & 84.43 & -13.19 & ±0.16 \\
+\bottomrule
+\end{tabular}
+}
+\caption{Within-dataset vs. cross-dataset performance comparison.}
+\label{tab:cross-dataset-results}
+\end{table}
+
+Table \ref{tab:ensemble-component-results} provides detailed cross-dataset performance metrics for all classifiers. The transformer-based DeBERTa classifier achieved the highest performance (96.57\% accuracy, 0.994 AUROC), demonstrating superior generalization across domains. Among the feature-based approaches, XGBoost showed significant overfitting with 82.76\% accuracy compared to its within-dataset performance of 97.62\% (Table \ref{tab:within-dataset-ensemble}), while the voting ensemble provided robust performance (88.89\% accuracy).
 
 \begin{table}[t]
 \centering
@@ -397,23 +411,23 @@ Table \ref{tab:ensemble-component-results} presents the performance of all class
 \midrule
 Random Classifier & 0.494 & 0.494 & 0.500 \\
 \midrule
-Naive Bayes & 0.848 & 0.848 & 0.918 \\
-NB (No Stopwords) & 0.852 & 0.851 & 0.920 \\
-BERT & 0.921 & 0.921 & 0.975 \\
-% Note: DeBERTa performance may differ on the full 112k dataset as these results reflect initial experiments. 
-DeBERTa & 0.942 & 0.942 & 0.988 \\
-XGBoost & \textbf{0.975} & \textbf{0.975} & \textbf{0.997} \\
+Naive Bayes & 0.809 & 0.775 & 0.941 \\
+BERT & 0.893 & 0.884 & 0.959 \\
+DeBERTa & \textbf{0.966} & \textbf{0.964} & \textbf{0.994} \\
+XGBoost & 0.828 & 0.814 & 0.860 \\
+Voting Ensemble & 0.889 & 0.877 & N/A \\
+Stacking Ensemble & 0.844 & 0.830 & N/A \\
 \bottomrule
 \end{tabular}
-\caption{Performance comparison of ensemble component models. Best values in bold.}
+\caption{Cross-dataset performance comparison of ensemble component models. Best values in bold.}
 \label{tab:ensemble-component-results}
 \end{table}
 
-\paragraph{Ensemble Performance}
-\label{tab:ensemble-performance}
-The ensemble methods demonstrated robust performance across multiple evaluation metrics, with voting and averaging approaches providing consistent improvements over individual classifiers in terms of stability and generalization.
+AUROC curves on held-out datasets (Appendix \ref{sec:auroc-curves}) confirm DeBERTa's superior discrimination (AUC 0.9948 and 0.9923) and XGBoost's limitations (AUC 0.7967 and 0.9224) when generalizing to unseen data.
 
-Having examined both feature-based results and ensemble performance, we now discuss the key findings and their implications for AI text detection.
+The ensemble methods demonstrated robust performance across multiple evaluation metrics, with the voting ensemble achieving 88.89\% accuracy (±1.49\% variance) and providing consistent improvements in terms of stability and generalization across domains. Comparing to within-dataset results (Table \ref{tab:within-dataset-ensemble}), the voting ensemble maintained performance (+0.19\% change), while the stacking ensemble declined (-4.27\% change), suggesting that simple aggregation methods generalize better than complex meta-learning approaches.
+
+Having examined both feature-based and ensemble performance, we now discuss the key findings and their implications for AI text detection.
 
 \section{Discussion and Conclusion}
 \label{sec:discussion-conclusion}
@@ -421,41 +435,36 @@ Having examined both feature-based results and ensemble performance, we now disc
 
 \subsection{Feature Importance Findings}
 \label{sec:feature-importance-discussion}
-The consistency of perplexity as the top-ranked feature across all three models (importance scores: 0.334-0.430) indicates that perplexity captures fundamental differences in text generation patterns. As expected, the direction of this relationship is that a higher perplexity score is indicative of human-written text, i.e. that AI text is more predictable to the Pythia 1.4B model, likely because there are similarities in the training data of different LLMs. 
+The consistency of perplexity as the top-ranked feature across all three models (importance scores: 0.334-0.430) indicates that perplexity captures fundamental differences in text generation patterns. As expected, the direction of this relationship is that a higher perplexity score is indicative of human-written text, i.e. that AI text is more predictable to the Pythia 1.4B model, likely because there are similarities in the training data of different LLMs.
 
-Lexical features are also consistently among the top discriminators across all models. AI-generated text is characterized by longer words and greater vocabulary diversity. This shows that modern LLMs employ a more varied vocabulary than human writers, possibly reflecting their large and diverse training corpora, where the average human vocabulary reaches natural limits and domain constraints. 
+Lexical features are also consistently among the top discriminators across all models. AI-generated text is characterized by longer words and greater vocabulary diversity. This shows that modern LLMs employ a more varied vocabulary than human writers, possibly reflecting their large and diverse training corpora, where the average human vocabulary reaches natural limits and domain constraints.
 
-Apart from perplexity, the models show differences in the feature importance rankings. Logistic Regression and Random Forest emphasize syntactic complexity features (parse depth variance, sentence structure), while XGBoost relies on simpler POS-based features. XGBoost achieves the highest performance (97.45\% accuracy) while using arguably simpler features rather than more computationally expensive and complex syntactic parsing-based features. This suggests XGBoost's gradient boosting effectively learns relationships between basic ratio-features that compensate for syntactic information. The specific POS features it emphasizes, ratios of proper nouns, verbs, interjections, and unusual tokens, may represent basic stylistic differences between human and AI-generated text.
-
-Building on these feature-level insights, we now examine how ensemble-based approaches compare to individual classifiers in terms of detection performance.
+Apart from perplexity, the models show differences in the feature importance rankings. Logistic Regression and Random Forest emphasize syntactic complexity features (parse depth variance, sentence structure), while XGBoost relies on simpler POS-based features. However, cross-dataset evaluation (Table \ref{tab:cross-dataset-results}) reveals that XGBoost's high within-dataset performance (97.62\% accuracy) stems from overfitting to dataset-specific artifacts, dropping to 82.76\% on unseen data (as visualized in Figures \ref{fig:sunilthite-auroc} and \ref{fig:daigt-auroc}, where its curve shows poorer separation with AUROC 0.7967--0.9224).
+This suggests that while linguistic features like perplexity remain discriminative, feature-based approaches may learn domain-specific patterns rather than general AI characteristics, limiting their real-world utility.
 
 \subsection{Ensemble-Based Detector vs. Individual Classifiers}
 \label{sec:ensemble-based-detector-discussion}
-% TODO 
-
-
+Cross-dataset evaluation (Table \ref{tab:cross-dataset-results}) reveals a fundamental tradeoff: XGBoost excels within-dataset (97.62\%) but overfits severely (-14.86 points to 82.76\% cross-dataset), while DeBERTa generalizes better (94.24\% to 96.57\%), learning robust linguistic patterns rather than dataset artifacts (Figures \ref{fig:sunilthite-auroc} and \ref{fig:daigt-auroc}). Voting ensembles provide middle-ground robustness (88.89\%) with low variance (±1.49\%), while stacking offers no benefit (84.43\%), validating simple aggregation for RQ2. Feature-based methods capture dataset-specific patterns; transformers capture generalizable characteristics.
 
 \subsection{Method Limitations}
 \label{sec:method-limitations}
-A limitation of this project is that our datasets include only samples that are either entirely human-written or entirely AI-generated, with no mixed or (adversarially) modified samples. In real-world scenarios, users may use different techniques to fool the detectors and evade detection. Our models were not trained or evaluated on such samples and their robustness to these scenarios would require further evaluation before practical deployment. 
+Our datasets include only pure human-written or AI-generated samples, lacking mixed or adversarially modified text. Robustness to evasion techniques requires further evaluation before deployment. Additionally, datasets lack non-English text and text from latest LLMs (GPT-5, Claude Sonnet 4.5, Gemini 2.5 Pro), representing primarily academic essays and Q\&A from pre-2024 models (GPT-3.5, GPT-4). Performance may degrade on contemporary text distributions (social media, code) and newer model generations, necessitating continuous retraining.
 
-The perplexity feature, which shows a high degree of discriminative power in our experiments, is calculated using a single language model, Pythia 1.4B trained on the Pile dataset, and may not generalize to text generated by models trained on substantially different data distributions. 
+The perplexity feature uses a single model (Pythia 1.4B trained on the Pile), limiting generalizability to LLMs with different training distributions. Within-dataset evaluation overestimated XGBoost's effectiveness; cross-dataset testing proved essential for realistic assessment.
 
-The generalizability of our models is also limited by the fact that we do not test LLM-models beyond those represented in our datasets, which do not include the latest models, such as GPT-5.
-
-
+\textbf{Computational Considerations:} While transformers require more resources than feature-based approaches, XGBoost's computational advantage is limited by perplexity calculation requiring GPU-accelerated Pythia 1.4B inference. This accuracy-efficiency tradeoff matters for resource-constrained deployments.
 
 \subsection{Ethical and Societal Considerations}
 \label{sec:ethical-considerations}
-This project develops an AI detection tool, which can be used to detect AI-generated text in a range of domains such as academia, journalism or creative writing. Our intention is that knowledge about whether a text is AI-generated or not can be used in a "positive" way for society in general. In the mentioned domains, this could be help prevent fraud in academic settings, or help journalists flag sources that may be AI-generated and require further investigation. Our tool explicitly tackles the problem of adversarial attacks against AI-detection tools by using an ensemble of classifiers where one will have to fool multiple models to successfully fool the tool. However, it is important to reflect upon how such a tool can be used to improve and create adversarial attacks/tools, both against this specific tool, but also against AI-detectors in general, by training an adversarial model by using this tool in a detector-evasion setup. 
+This project develops an AI detection tool, which can be used to detect AI-generated text in a range of domains such as academia, journalism or creative writing. Our intention is that knowledge about whether a text is AI-generated or not can be used in a "positive" way for society in general. In the mentioned domains, this could be help prevent fraud in academic settings, or help journalists flag sources that may be AI-generated and require further investigation. Our tool explicitly tackles the problem of adversarial attacks against AI-detection tools by using an ensemble of classifiers where one will have to fool multiple models to successfully fool the tool. However, it is important to reflect upon how such a tool can be used to improve and create adversarial attacks/tools, both against this specific tool, but also against AI-detectors in general, by training an adversarial model by using this tool in a detector-evasion setup.
 
 Another ethical consideration is that this tool does not have zero false positive or false negative rates. Incorrect classification of human-written text can have serious consequences for the individual, such as a student being accused of cheating, possibly leading to failing a course or even being expelled from a university. Incorrect classification of AI-generated text on the other hand can lead to spread of misinformation such as "fake" news or made up scientific findings with a "stamp" of authenticity. To minimize these potential harms, a tool such as this should be deployed with transparent confidence scores and clear disclaimers and explanations about its limitations. 
 
 \subsection{Conclusion}
 \label{sec:conclusion}
-This project investigated which linguistic and statistical features are most effective for AI-text detection (RQ1) and whether ensemble-based classification improves robustness (RQ2). Regarding RQ1, perplexity is identified as the most dominant discriminative feature across all models, with higher perplexity indicating human-written text. Lexical features, particularly average word length, hapax legomena ratio, and RTTR, consistently ranked among the top discriminators, indicating that AI-generated text has greater vocabulary diversity and longer words than human writing. The XGBoost classifier reached the highest performance (97.45\% accuracy, 0.997 AUROC), demonstrating that explicit linguistic features can be an effective signal for AI text detection.
+Perplexity and lexical features (average word length, hapax legomena ratio) are most discriminative for AI-text detection (RQ1), but transformers like DeBERTa (96.57\% cross-dataset) generalize far better than feature-based XGBoost (82.76\%), which overfits to dataset artifacts. Voting ensembles enhance robustness (88.89\%) compared to individual classifiers (RQ2), though stacking offers no benefit. Cross-dataset evaluation proved essential—within-dataset metrics alone (XGBoost: 97.62\%) misleadingly suggest reliability where severe overfitting exists.
 
-Regarding RQ2, we were unable to demonstrate clear improvements from the ensemble approach, as the XGBoost classifier with its overall high performance dominated the ensemble's predictions. Ensemble methods are theoretically most beneficial in scenarios of adversarial attacks and domain shifts, but we have not performed such testing and cannot evaluate whether they improve detector robustness in these contexts. Future work should assess whether the added complexity provides meaningful benefits over a single well-performing feature-based classifier.
+For practical deployment, prioritize DeBERTa for cross-domain robustness; use XGBoost only when training and deployment distributions match. Cross-dataset validation is critical before deployment. Given ethical risks (false positives in academic settings, adversarial misuse), deploy with transparent confidence scores and human oversight. Future work should investigate adversarial robustness, domain adaptation, and why transformers generalize better than feature-based methods.
 
 \balance
 
@@ -466,6 +475,80 @@ Regarding RQ2, we were unable to demonstrate clear improvements from the ensembl
 \appendix
 \section*{Appendix}
 
+\section{Dataset Details}
+\label{sec:dataset-details}
+
+\subsection{Dataset Class Distributions}
+Table \ref{tab:dataset-class-distribution} shows the original class distributions across the four datasets used in this study, before balancing.
+
+\begin{table}[H]
+\centering
+\footnotesize
+\begin{tabular}{lrcc}
+\toprule
+\textbf{Dataset} & \textbf{Samples} & \textbf{Human (\%)} & \textbf{AI (\%)} \\
+\midrule
+HC3 & 85K & 68.5 & 31.5 \\
+sunilthite & 29K & 60.1 & 39.9 \\
+DAIGT V2 & 45K & 61.0 & 39.0 \\
+AH\&AITD & 12K & 50.0 & 50.0 \\
+\bottomrule
+\end{tabular}
+\caption{Dataset size and class distributions before balancing}
+\label{tab:dataset-class-distribution}
+\end{table}
+
+\subsection{Combined Dataset Composition}
+Table \ref{tab:combined-dataset} shows the final composition of the combined balanced dataset used for training and evaluation.
+
+\begin{table}[H]
+\centering
+\footnotesize
+\begin{tabular}{lrr}
+\toprule
+\textbf{Dataset} & \textbf{Samples} & \textbf{Proportion (\%)} \\
+\midrule
+HC3 & 43,000 & 38.1 \\
+DAIGT V2 & 34,994 & 31.0 \\
+sunilthite & 23,274 & 20.6 \\
+AH\&AITD & 11,580 & 10.3 \\
+\midrule
+\textbf{Total} & \textbf{112,848} & \textbf{100.0} \\
+\bottomrule
+\end{tabular}
+\caption{Combined dataset composition after balancing}
+\label{tab:combined-dataset}
+\end{table}
+
+\section{AUROC Curves}
+\label{sec:auroc-curves}
+
+\subsection{Within-Dataset AUROC Curves}
+Figure \ref{fig:within-dataset-roc} shows the AUROC curves for all classifiers on the within-dataset test set (22,570 samples). The curves illustrate the superior discrimination capability of XGBoost (AUC 0.997) and DeBERTa (AUC 0.988) compared to baseline methods. The near-perfect AUROC values indicate excellent classification performance when models are tested on data from the same distribution as training.
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=0.6\textwidth]{20-10-poster-results/roc_curves_20251020_185318.png}
+\caption{AUROC curves for all classifiers on within-dataset test set.}
+\label{fig:within-dataset-roc}
+\end{figure*}
+
+\subsection{Cross-Dataset AUROC Curves}
+Figures \ref{fig:sunilthite-auroc} and \ref{fig:daigt-auroc} show AUROC curves on held-out datasets from leave-one-dataset-out cross-validation. These curves reveal significant performance differences when models face distribution shifts: DeBERTa maintains superior discrimination (AUC 0.9948 and 0.9923), while XGBoost shows substantial degradation (AUC 0.7967 and 0.9224), confirming its overfitting to training dataset characteristics.
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=0.5\textwidth]{7-11-crossdataset-results/roc_curves_sunilthite_20251107_211231.png}
+\caption{AUROC curves for models on the SUNILTHITE held-out dataset.}
+\label{fig:sunilthite-auroc}
+\end{figure*}
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=0.6\textwidth]{7-11-crossdataset-results/roc_curves_daigt_v2_20251107_211231.png}
+\caption{AUROC curves for models on the DAIGT V2 held-out dataset.}
+\label{fig:daigt-auroc}
+\end{figure*}
 
 \section{Full List of Extracted Features}
 \label{sec:full-list-of-features}
