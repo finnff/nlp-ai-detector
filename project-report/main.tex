@@ -169,7 +169,7 @@ In statistics, burstiness is a measure of the variability in data points over ti
 
 \subsubsection{Feature Selection}
 \label{sec:feature-selection}
-To reduce collinearity, a correlation analysis was performed on all the described extracted features, and from pairs with high pairwise correlation ($r > 0.8$), one feature was dropped. The feature to be dropped was selected based on whether it was correlated with more other features, and which feature would be more informative in the project context. After this selection process, 40 linguistic and statistical features were left for model training. The full list of selected and dropped features is shown in Table \ref{tab:feature-selection}.
+To reduce collinearity, a correlation analysis was performed on all the described extracted features, and from pairs with high pairwise correlation ($r > 0.8$), one feature was dropped. The feature to be dropped was selected based on whether it was correlated with more other features, and which feature would be more informative in the project context. After this selection process, 40 linguistic and statistical features were left for model training. The list of selected and dropped features is shown in Table \ref{tab:feature-selection}, for the extended list with all POS-tags, see Appendix \ref{sec:full-list-of-features}.
 
 \begin{table}[t]
   \centering
@@ -365,7 +365,7 @@ F1 (Weighted) & 0.928 & 0.961 & \textbf{0.975} \\
 \end{table}
 
 \paragraph{Feature Importance Analysis}
-Figures \ref{fig:lr-features}, \ref{fig:rf-features}, and \ref{fig:xgb-features} show the top 10 most important features for each of the three feature-based classifiers. Across all three models, perplexity is the most discriminative feature, with normalized importance scores ranging from 0.334 (XGBoost) to 0.430 (Random Forest). Lexical features, particularly average word length and hapax legomena ratio, consistently rank among the top features. Syntactic features show varying importance across models, with Random FOrest and Logistic Regression having four syntactic features among their top 10, and XGBoost only one, and parse depth variance being the second most important feature for Logistic Regression (0.179) but not appearing at all in the top 10 for XGBoost.
+Figures \ref{fig:lr-features}, \ref{fig:rf-features}, and \ref{fig:xgb-features} show the top 10 features for each classifier. Perplexity dominates across all models (importance 0.334-0.430), followed by lexical features (average word length, hapax legomena ratio). The models show differences in which type of features are more discriminative: Logistic Regression and Random Forest emphasize syntactic complexity (four syntactic features each), while XGBoost relies more heavily on POS ratios (four POS features vs. one for LR and none for RF).
 
 \begin{figure}[t]
 \centering
@@ -429,6 +429,22 @@ XGBoost & \textbf{0.975} & \textbf{0.975} & \textbf{0.997} \\
 \section{Discussion and Conclusion}
 \label{sec:discussion-conclusion}
 % Concisely assess your project, addressing errors and their potential causes. Discuss method limitations, dataset issues, and consider alternative approaches. Briefly explore ethical implications and societal impact of deploying your NLP solutions, suggesting ways to address ethical concerns. Summarise your conclusions.
+
+\subsection{Feature Importance Findings}
+\label{sec:feature-importance-discussion}
+The consistency of perplexity as the top-ranked feature across all three models (importance scores: 0.334-0.430) indicates that perplexity captures fundamental differences in text generation patterns. As expected, the direction of this relationship is that a higher perplexity score is indicative of human-written text, i.e. that AI text is more predictable to the Pythia 1.4B model, likely because there are similarities in the training data of different LLMs. 
+
+Lexical features are also consistently among the top discriminators across all models. AI-generated text is characterized by longer words and greater vocabulary diversity. This shows that modern LLMs employ a more varied vocabulary than human writers, possibly reflecting their large and diverse training corpora, where the average human vocabulary reaches natural limits and domain constraints. 
+
+Apart from perplexity, the models show differences in the feature importance rankings. Logistic Regression and Random Forest emphasize syntactic complexity features (parse depth variance, sentence structure), while XGBoost relies on simpler POS-based features. XGBoost achieves the highest performance (97.45\% accuracy) while using arguably simpler features rather than more computationally expensive and complex syntactic parsing-based features. This suggests XGBoost's gradient boosting effectively learns relationships between basic ratio-features that compensate for syntactic information. The specific POS features it emphasizes, ratios of proper nouns, verbs, interjections, and unusual tokens, may represent basic stylistic differences between human and AI-generated text. 
+
+
+\subsection{Ensemble-Based Detector vs. Individual Classifiers}
+\label{sec:ensemble-based-detector-discussion}
+% TODO 
+
+
+
 \subsection{Method Limitations}
 \label{sec:method-limitations}
 A limitation of this project is that our datasets include only samples that are either entirely human-written or entirely AI-generated, with no mixed or (adversarially) modified samples. In real-world scenarios, users may use different techniques to fool the detectors and evade detection. Our models were not trained or evaluated on such samples and their robustness to these scenarios would require furhter evaluation before practical deployment. 
@@ -449,6 +465,7 @@ Incorrect classification of human-written text can have serious consequences for
 \subsection{Conclusion}
 \label{sec:conclusion}
 
+
 % \textbf{RQ1:} \textit{Which linguistic or statistical features are most effective in distinguishing human- vs. AI-generated text?}
 
 
@@ -462,6 +479,8 @@ Incorrect classification of human-written text can have serious consequences for
 \appendix
 \label{sec:appendix}
 
-\section{Example appendix}
+\section{Full List of Features Extracted}
+\label{sec:full-list-of-features}
+\texttt{['average_word_length', 'word_length_variance', 'rttr_root_type_token_ratio', 'hapax_legomena_ratio', 'average_sentence_length', 'sentence_length_variance', 'average_parse_depth', 'maximum_parse_depth', 'parse_depth_variance', 'comma_ratio', 'period_ratio', 'exclamation_mark_ratio', 'question_mark_ratio', 'punctuation_per_word', 'pos_ratio_adj', 'pos_ratio_adp', 'pos_ratio_adv', 'pos_ratio_aux', 'pos_ratio_conj', 'pos_ratio_cconj', 'pos_ratio_det', 'pos_ratio_intj', 'pos_ratio_noun', 'pos_ratio_num', 'pos_ratio_part', 'pos_ratio_pron', 'pos_ratio_propn', 'pos_ratio_punct', 'pos_ratio_sconj', 'pos_ratio_sym', 'pos_ratio_verb', 'pos_ratio_x', 'noun_to_verb_ratio', 'sentence_length_burstiness', 'sentence_length_iqr', 'position_burstiness_diff', 'long_sentence_ratio', 'word_length_burstiness', 'clause_length_burstiness', 'generated', 'perplexity']}
 
 \end{document}
