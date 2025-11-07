@@ -64,15 +64,16 @@
 \maketitle
 \begin{abstract}
   % Offer a concise overview of your entire report, covering context, objectives, methods, findings, and significance. Aim for 150-250 words.
+
 \end{abstract}
 
 \section{Introduction}
 \label{sec:introduction}
 % State the specific problems you aimed to address or the questions you sought to answer. If your project was inspired by a particular paper (or papers), which motivated your interest in the problem, kindly reference them here.
 
-For this project, we explore which linguistic or statistical features are most effective for distinguishing human- vs. AI-generated text. Recent surveys indicate that hybrid approaches, combining statistical and neural methods, often outperform single-modality detectors in robustness and generalization \citep{wu-etal-2025-survey, su2024robustdetectionllmgeneratedtext}. 
+The availability of large language models (LLMs) has created an urgent need for reliable detection of AI-generated text in domains such as academia and journalism. Recent surveys indicate that hybrid approaches to AI detection, combining statistical and neural methods, often outperform single-modality detectors in both robustness and generalization \citep{wu-etal-2025-survey, su2024robustdetectionllmgeneratedtext}.
 
-The project approach is two-fold. First, a feature analysis is conducted to understand which classic linguistic and statistical features, e.g. sentence complexity, punctuation patterns, lexical diversity, perplexity, and part-of-speech (POS) distributions, are most discriminative. Multiple lightweight classifiers (logistic regression, random forest, XGBoost) are trained on the extracted linguistic/statistical features and their feature importance rankings are compared to identify important/robust signals. Second, the project explores how to make an AI-detector harder to fool in a real world-deployment scenario, specifically, increasing its robustness against adversarial attacks and domain shifts. This is done by combining multiple classification approaches (including neural methods like BERT and statistical methods like Naive Bayes) via majority voting. 
+Motivated by these findings, this project takes a dual approach to AI text detection. First, we conduct a systematic feature-based analysis to identify which linguistic and statistical patterns are most discriminative. Second, we implement an ensemble-based detector combining multiple classification approaches to explore whether such combinations can improve practical deployment robustness.
 
 This project addresses two research questions:
 
@@ -464,12 +465,9 @@ Incorrect classification of human-written text can have serious consequences for
 
 \subsection{Conclusion}
 \label{sec:conclusion}
+This project investigated which linguistic and statistical features are most effective for AI-text detection (RQ1) and whether ensemble-based classification improves robustness (RQ2). Regarding RQ1, perplexity is identified as the most dominant discriminative feature across all models, with higher perplexity indicating human-written text. Lexical features, particularly average word length, hapax legomena ratio, and RTTR, consistently ranked among the top discriminators, indicating that AI-generated text has greater vocabulary diversity and longer words than human writing. The XGBoost classifier reached the highest performance (97.45\% accuracy, 0.997 AUROC), demonstrating that explicit linguistic features can be an effective signal for AI text detection.
 
-
-% \textbf{RQ1:} \textit{Which linguistic or statistical features are most effective in distinguishing human- vs. AI-generated text?}
-
-
-% \textbf{RQ2:} \textit{How does ensemble-based classification improve robustness compared to individual classifiers?}
+Regarding RQ2, we were unable to demonstrate clear improvements from the ensemble approach, as the XGBoost classifier with its overall high performance dominated the ensemble's predictions. Ensemble methods are theoretically most beneficial in scenarios of adversarial attacks and domain shifts, but we have not performed such testing and cannot evaluate whether they improve detector robustness in these contexts. Future work should assess whether the added complexity provides meaningful benefits over a single well-performing feature-based classifier.
 
 
 
