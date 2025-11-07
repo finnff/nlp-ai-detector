@@ -169,7 +169,7 @@ In statistics, burstiness is a measure of the variability in data points over ti
 
 \subsubsection{Feature Selection}
 \label{sec:feature-selection}
-To reduce collinearity, a correlation analysis was performed on all the described extracted features, and from pairs with high pairwise correlation ($r > 0.8$), one feature was dropped. The feature to be dropped was selected based on whether it was correlated with more other features, and which feature would be more informative in the project context. The full list of selected and dropped features is shown in Table \ref{tab:feature-selection}.
+To reduce collinearity, a correlation analysis was performed on all the described extracted features, and from pairs with high pairwise correlation ($r > 0.8$), one feature was dropped. The feature to be dropped was selected based on whether it was correlated with more other features, and which feature would be more informative in the project context. After this selection process, 40 linguistic and statistical features were left for model training. The full list of selected and dropped features is shown in Table \ref{tab:feature-selection}.
 
 \begin{table}[t]
   \centering
@@ -333,12 +333,46 @@ Perplexity features were computed using the \texttt{EleutherAI/pythia-1.4b} mode
 \subsection{Results}
 \label{sec:results}
 
-\subsubsection{Feature Importance Analysis}
+\subsubsection{Feature-Based Analysis}
+
+\paragraph{Classification Performance}
+Table \ref{tab:feature-based-results} presents the performance of the three feature-based classifiers on the test set (22,570 samples, 11,285 per class). XGBoost achieved the highest performance with 97.45\% accuracy, followed by Random Forest (96.06\%) and Logistic Regression (92.82\%).
+
+\begin{table}[t]
+\centering
+\scriptsize
+\begin{tabular}{@{}lccc@{}}
+\toprule
+\textbf{Metric} & \textbf{Logistic Regression} & \textbf{Random Forest} & \textbf{XGBoost} \\
+\midrule
+Accuracy & 0.928 & 0.961 & \textbf{0.975} \\
+\midrule
+\multicolumn{4}{@{}l}{\textit{Human-Written}} \\
+Precision & 0.931 & 0.949 & \textbf{0.969} \\
+Recall & 0.925 & 0.973 & \textbf{0.980} \\
+F1-Score & 0.928 & 0.961 & \textbf{0.975} \\
+\midrule
+\multicolumn{4}{@{}l}{\textit{AI-Generated}} \\
+Precision & 0.926 & 0.973 & \textbf{0.980} \\
+Recall & 0.931 & 0.948 & \textbf{0.969} \\
+F1-Score & 0.928 & 0.960 & \textbf{0.974} \\
+\midrule
+F1 (Macro) & 0.928 & 0.961 & \textbf{0.975} \\
+F1 (Weighted) & 0.928 & 0.961 & \textbf{0.975} \\
+\bottomrule
+\end{tabular}
+\caption{Performance metrics for feature-based classifiers. Best values in bold.}
+\label{tab:feature-based-results}
+\end{table}
+
+\paragraph{Feature Importance Analysis}
+
+\paragraph{SHAP Summary Plot}
 Figure \ref{fig:shap-summary} shows the SHAP analysis for the XGBoost classifier. Perplexity is the most discriminative feature, followed by lexical features (hapax legomena ratio, average word length, RTTR). High perplexity values (red) are strongly associated with human-written text, while low perplexity (blue) is strongly associated with AI-generated text. For the lexical features, lower values are associated with human-written text, that is less unique words, shorter words and a smaller range of words is associated with human-written text.
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=\columnwidth]{../plots/xgboost_results_20251106_144223_shap_summary.png}
+\includegraphics[width=\columnwidth]{../plots/shap_plot.png}
 \caption{SHAP summary plot for XGBoost classifier. Color indicates feature value (red=high, blue=low); horizontal position shows impact on model output (positive values = AI-generated, negative values = human-written).}
 \label{fig:shap-summary}
 \end{figure}
@@ -385,38 +419,3 @@ Incorrect classification of human-written text can have serious consequences for
 \section{Example appendix}
 
 \end{document}
-
-
-
-
-
-% Title: Combined Dataset Maker 20/10
-% Total samples: 172000
-% Use arrow: False
-% Random: False
-% Balance classes: True
-
-% 📊 Final combined dataset info:
-%    Shape: (112848, 3)
-%    Columns: ['text', 'generated', 'perplexity']
-%    🧠 Perplexity available for 112844/112848 samples (100.0%)
-% 💾 Dataset metadata saved: data/datasets/dataset_metadata.json
-
-% Sources:
-% [ENABLED] hc3                      :   85431 total (H: 58546, AI: 26885) → 43000 samples (50.33% of source, 38.10% of combined)
-% [ENABLED] daigt_v2                 :   44868 total (H: 27371, AI: 17497) → 34994 samples (77.99% of source, 31.01% of combined)
-% [ENABLED] sunilthite               :   29145 total (H: 17508, AI: 11637) → 23274 samples (79.86% of source, 20.62% of combined)
-% [ENABLED] ah_aitd                  :   11580 total (H:  5790, AI:  5790) → 11580 samples (100.00% of source, 10.26% of combined)
-% Combined Dataset Head: 
-
-%                                                 text  generated  perplexity
-% 0  It is possible that the pain you are experienc...          1    4.157336
-% 1  Okay, I'll give it a shot! Here's my essay:\n\...          1    4.956675
-% 2  The importance of the thermal properties of in...          1   26.813772
-% 3  Depends on the drug . Heroin and other narcoti...          0   14.745926
-% 4  What object ? Mercury does n't have any satell...          0  105.859143
-
-
-% Shape: (112848, 3)
-% Human Written: 56424 (50.00%)
-% Ai Generated: 56424 (50.00%)
