@@ -2,6 +2,8 @@
 
 % Change "review" to "final" to generate the final (sometimes called camera-ready) version.
 % Change to "preprint" to generate a non-anonymous version with page numbers.
+
+%  seems the only difference between preprint and final is the page numbers, so we can just use preprint.
 \usepackage[preprint]{acl}
 \usepackage{times}
 \usepackage{latexsym}
@@ -15,11 +17,12 @@
 \usepackage{multirow}
 \usepackage{placeins}
 \usepackage{float}
+\usepackage{balance}
 % skip huge vertical space after title/author
 \setlength\titlebox{8\baselineskip}
 
 
-%  TODO consider whether it was the same model generating the perplexity scores as the one generating the text, that would be a shortcut..
+
 
 % Report requireements:
 % ------------------------------- 
@@ -37,7 +40,6 @@
 % • Experiments & results - sound setup, meaningful evaluation, and clear reporting of outcomes.
 % • Discussion & conclusion - critical reflection on findings, limitations, and ethical aspects.
 % • Presentation & writing - overall structure and readability.
-
 
 
 
@@ -64,51 +66,44 @@
 \maketitle
 \begin{abstract}
   % Offer a concise overview of your entire report, covering context, objectives, methods, findings, and significance. Aim for 150-250 words.
+% TODO
 \end{abstract}
 
 \section{Introduction}
 \label{sec:introduction}
 % State the specific problems you aimed to address or the questions you sought to answer. If your project was inspired by a particular paper (or papers), which motivated your interest in the problem, kindly reference them here.
 
-For this project, we explore which linguistic or statistical features are most effective for distinguishing human- vs. AI-generated text. Recent surveys indicate that hybrid approaches, combining statistical and neural methods, often outperform single-modality detectors in robustness and generalization \citep{wu-etal-2025-survey, su2024robustdetectionllmgeneratedtext}. 
+The availability of large language models (LLMs) creates a demand for reliable detection of AI-generated text in domains such as academia and journalism. Recent surveys indicate that hybrid approaches to AI detection, combining statistical and neural methods, often outperform single-modality detectors in both robustness and generalization \citep{wu-etal-2025-survey, su2024robustdetectionllmgeneratedtext}.
 
-The project approach is two-fold. First, a feature analysis is conducted to understand which classic linguistic and statistical features, e.g. sentence complexity, punctuation patterns, lexical diversity, perplexity, and part-of-speech (POS) distributions, are most discriminative. Multiple lightweight classifiers (logistic regression, random forest, XGBoost) are trained on the extracted linguistic/statistical features and their feature importance rankings are compared to identify important/robust signals. Second, the project explores how to make an AI-detector harder to fool in a real world-deployment scenario, specifically, increasing its robustness against adversarial attacks and domain shifts. This is done by combining multiple classification approaches (including neural methods like BERT and statistical methods like Naive Bayes) via majority voting. 
+Motivated by these findings, this project takes a dual approach to AI text detection. First, we conduct a feature-based analysis to identify which linguistic and statistical patterns are most discriminative. Second, we implement an ensemble-based detector combining multiple classification approaches to explore whether such combinations can improve practical deployment robustness.
 
-% TODO discuss whether we should include the best of the feature-based models in this ensemble approach. Will require some work on the pipeline. 
+This project addresses two research questions:
 
-% \textit{RQ: Which linguistic or statistical features  are most effective in distinguishing human- vs. AI-generated text?}
+\textbf{RQ1:} \textit{Which linguistic or statistical features are most effective in distinguishing human- vs. AI-generated text?}
 
-\textit{RQ1: Which linguistic or statistical features are most effective in distinguishing human- vs. AI-generated text?}
-% adding a second research question about the ensemble-based approach.
-\textit{RQ2: How does ensemble-based classification improve robustness compared to individual classifiers?}
+\textbf{RQ2:} \textit{How does ensemble-based classification improve robustness compared to individual classifiers?}
 
 \section{Related Work}
 \label{sec:related-work}
 % Although not an exhaustive literature review, discuss a few key papers that tackled similar problems. Highlight their data and methods, outcomes, and outline the points of distinction between your approach and theirs.
-%  TODO probably add something more here. 
-Recent surveys on AI text detection indicate that hybrid approaches, combining statistical and neural methods, often outperform single-modality detectors in robustness and generalization \citep{wu-etal-2025-survey, su2024robustdetectionllmgeneratedtext}. These findings motivate our dual approach: first analyzing individual linguistic and statistical features for interpretability, and second combining multiple classifiers in an ensemble to improve robustness against adversarial attacks and domain shifts.
+\citet{wu-etal-2025-survey} conducted a comprehensive review of the state-of-the-art in LLM-generated text detection in 2025. They classify LLM-generated text detectors into three categories: watermarking technology where the generator includes identifiable patterns in the text to regulate and detect its origin; statistics-based detectors which analyze inherent patterns of the generated text; and neural-based detectors which use machine learning models to classify the generated text. The detectors in the survey report performance using different metrics, but among the best performing are the two statistics-based detectors "Ghostbuster" with average F1 score of 99.0 and GECScore with an AUROC of 98.62\%. Among the neural-based detectors, DNA-GPT achieved "nearly 100\%" detection accuracy in distinguishing between human-written and GPT-generated texts on multiple datasets. The watermarking methods are noted for their robustness against adversarial attacks, e.g. reliable classification when up to 50\% of the tokens were modified, and low false-positive rates, making them a promising approach for reliable detection. 
+
+However, robustness against adversarial attacks remains a significant challenge. \citet{weber-wulff_testing_2023} examine the reliability of AI text detection tools in academic settings and found that obfuscation techniques, e.g. manual editing and machine paraphrasing, significantly reduce the accuracy of detection tools, with approximately 50\% of the texts that had undergone some type of post-generation editing being misclassified as human-written. Similar results, with detectors being less accurate when subjected to adversarial attacks, are reported by \citet{wu-etal-2025-survey} and \citet{pudasaini_survey_2025}. 
+
+Multiple surveys indicate that hybrid approaches, combining statistical and neural methods, often outperform single-modality detectors in robustness and generalization \citep{wu-etal-2025-survey, su2024robustdetectionllmgeneratedtext}.
 
 \section{Data}
 \label{sec:data}
 % Describe the dataset employed in your project. Explain dataset properties, its composition (documents, sentences, words), and labelling information (by whom, how).Indicate the source if it's an existing dataset, or if you created your own, describe the process.
 
-To ensure our model generalizes across diverse English language sources, domains, and LLMs, and to mitigate overfitting to any single dataset's biases, we will utilize multiple datasets for training and evaluation. This approach allows for robust testing of features and hybrids in varied contexts, such as essays, Q\&A, and long-form texts from different LLMs.
-
-\begin{itemize}[noitemsep,nolistsep]
-% \item AI Text Detection Pile (Hugging Face): diverse texts (Reddit, Wikipedia, books) \citep{artem9k_ai_text_detection_pile_2023}.
-\item AH\&AITD (Arslan's Human and AI Text Database): texts across domains (articles, abstracts, stories, news, reviews) \citep{akram2023ahaitd}.
-\item LLM - Detect AI Generated Text Dataset (Kaggle sunilthite): essays \citep{thite2023llm}.
-% \item LLM - Detect AI Generated Text (Kaggle Competition): essays \citep{kaggle2023llmdetect}.
-\item DAIGT V2 Train Dataset (Kaggle): essays \citep{deotte2023daigtv2}.
-\item Human ChatGPT Comparison Corpus (HC3): Q\&A from domains (finance, medicine, law, open) \citep{guo-etal-2023-hc3}.
-\end{itemize}
+To ensure our model generalizes across diverse English language sources, domains, and LLMs, and to mitigate overfitting to any single dataset's biases, we utilize multiple datasets for training and evaluation. This approach allows for robust testing of features and hybrids in varied contexts. The datasets include AH\&AITD (Arslan's Human and AI Text Database) with texts across domains including articles, abstracts, stories, news, and reviews \citep{akram2023ahaitd}; the LLM - Detect AI Generated Text Dataset (Kaggle sunilthite) containing essays \citep{thite2023llm}; the DAIGT V2 Train Dataset (Kaggle) with essays \citep{deotte2023daigtv2}; and the Human ChatGPT Comparison Corpus (HC3) comprising Q\&A from domains such as finance, medicine, law, and open-domain questions \citep{guo-etal-2023-hc3}.
 
 \subsection{Dataset Balancing}
 \label{sec:dataset-balancing}
 The datsets showed varying degrees of class imbalance between the target classes human-written (0) and AI-generated (1), ranging from 31.5\% AI-generated in the HC3 dataset to 50.0\% AI-generated in the AH\&AITD dataset. The dataset's class distribution is shown in Table \ref{tab:dataset-class-distribution}.
 
 The dataset was balanced using a per-source strategy, where each source contributes an equal number of human-written and AI-generated samples according to its configured proportion of the total dataset size, and limited by the smallest class per source. This ensures balanced representation across both the source datasets and the target classes.
-
+% NOTE this table could totally be moved to appendix.
 \begin{table}[t]
 \centering
 \footnotesize
@@ -160,15 +155,15 @@ The ratio of punctuation marks to word count was calculated for comma, period, e
 POS tags were extracted using spaCy's coarse-grained POS tags (\texttt{token.pos\_}) rather than fine-grained tags (\texttt{token.tag\_}) to capture overall patterns in word class usage, fine grained tags were excluded as they may be too specific for the objective, and yield sparse data. The ratio of each POS category (noun, verb, adjective, adverb, etc.) to total tokens was calculated as well as a noun-to-verb ratio as a derived feature.
 
 \paragraph{Perplexity}
-Perplexity is defined as the inverse test set probability according to the model used for calculating the perplexity score, normalized by the length of the text \citep{jm3}. It is an evaluation of the model's ability to predict uniformly among the set of tokens in a corpus, or in other words how "surprised" the model is by the text, where a lower perplexity indicates more predictable/less surprising text for the model. Perplexity was calculated using EleutherAI's Pythia 1.4B model \citep{biderman2023pythia}, an open-source model trained on the Pile dataset \citep{pile}. The model was downloaded from Hugging Face, and run using the transformers library \citep{wolf-etal-2020-transformers}. This model was chosen for its balance between computational efficiency and generalization due to its diverse training data, which includes web text, books, and academic sources similar to the datasets of this experiment.
+Perplexity is defined as the inverse test set probability according to the model used for calculating the perplexity score, normalized by the length of the text \citep{jm3}. It is an evaluation of the model's ability to predict uniformly among the set of tokens in a corpus, or in other words how "surprised" the model is by the text, where a lower perplexity indicates more predictable/less surprising text for the model. Perplexity was calculated using EleutherAI's Pythia 1.4B model \citep{biderman2023pythia}, an open-source model trained on the Pile dataset \citep{pile}. The model was chosen for its balance between computational efficiency and generalization due to its diverse training data, which includes web text, books, and academic sources similar to the datasets of this experiment.
 
 \paragraph{Burstiness Features}
-In statistics, burstiness is a measure of the variability in data points over time, i.e. the variation in the frequency of an event. For each text input, ten burstiness features were originally extracted, measuring variation at the sentence, word, and clause levels. The core burstiness metric uses the Goh-Barabasi coefficient \citep{Goh_2008}: \(B = \frac{\sigma - \mu}{\sigma + \mu}\), where \(\sigma\) is the standard deviation and \(\mu\) is the mean, this measure is designed for analyzing variation in sequential data distributions, which is what we wish to analyze. The formula yields a burstiness score between -1 (uniform) and 1 (highly variable). Features include sentence length burstiness, interquartile range-based dispersion, positional variation (comparing first and second halves), long sentence ratio, word length burstiness, and clause length burstiness. After correlation analysis, six burstiness features were retained.
+In statistics, burstiness is a measure of the variability in data points over time. The core burstiness metric uses the Goh-Barabasi coefficient \citep{Goh_2008}: \(B = \frac{\sigma - \mu}{\sigma + \mu}\), where \(\sigma\) is the standard deviation and \(\mu\) is the mean, this measure is designed for analyzing variation in sequential data distributions, which is what we wish to analyze. The formula yields a burstiness score between -1 (uniform) and 1 (highly variable). For each text input, ten burstiness features were originally extracted, measuring variation at the sentence, word, and clause levels, including sentence length burstiness, positional variation (comparing first and second halves) and clause length burstiness. After correlation analysis, six burstiness features were retained.
 
 
 \subsubsection{Feature Selection}
 \label{sec:feature-selection}
-To reduce collinearity, a correlation analysis was performed on all the described extracted features, and from pairs with high pairwise correlation ($r > 0.8$), one feature was dropped. The feature to be dropped was selected based on whether it was correlated with more other features, and which feature would be more informative in the project context. The full list of selected and dropped features is shown in Table \ref{tab:feature-selection}.
+To reduce collinearity, a correlation analysis was performed on all the described extracted features, and from pairs with high pairwise correlation ($r > 0.8$), one feature was dropped. The feature to be dropped was selected based on whether it was correlated with more other features, and which feature would be more informative in the project context. After this selection process, 40 linguistic and statistical features were left for model training. The list of selected and dropped features is shown in Table \ref{tab:feature-selection}, for the extended list with all POS-tags, see Appendix \ref{sec:full-list-of-features}.
 
 \begin{table}[t]
   \centering
@@ -224,12 +219,12 @@ To reduce collinearity, a correlation analysis was performed on all the describe
 
 \subsection{Approach 2: Ensemble-Based Detector}
 \label{sec:ensemble-based-detector}
-The ensemble-based detector combines five classifiers to build a practical, robust AI text detector. The classifier outputs are combined using two methods: voting, also known as the weighted majority algorithm, and stacking.
+The ensemble-based detector combines five classifiers to build a practical, robust AI text detector. The classifier outputs are combined using two methods: majority voting and stacking.
 
 \subsubsection{Base Classifiers}
 \label{sec:base-classifiers}
-The ensemble-based detector is made up of multiple text-based classifiers and the feature-based classifiers from Approach 1 (Section \ref{sec:feature-based-analysis}) leveraging different perspectives on the classification task. 
-The LLM-models were downloaded from Hugging Face, and run using the transformers library \citep{wolf-etal-2020-transformers}. 
+
+The ensemble-based detector is made up of multiple text-based classifiers and the XGBoost classifier from Approach 1 (Section \ref{sec:feature-based-analysis}) leveraging different perspectives on the classification task. 
 
 \paragraph{BERT Classifier}
 BERT captures contextual word representations through its bidirectional transformer architecture, letting it capture semantic patterns in text.
@@ -240,7 +235,7 @@ A DeBERTa-based classifier using the \texttt{microsoft/deberta-v3-base} model. D
 
 
 \paragraph{Naive Bayes Classifiers}
-Two Naive Bayes classifiers were implemented for the ensemble using sklearn's MultinomialNB \citep{scikit-learn} with bag-of-word features implemented using CountVectorizer \citep{scikit-learn}. The first model uses the full vocabulary, while the second model has stopwords removed using sklearn's English stopwords.
+Two Naive Bayes classifiers were included in the ensemble, one using the full vocabulary and one with stopwords removed.
 
 \paragraph{XGBoost Classifier}
 The XGBoost classifier described in section \ref{sec:feature-based-analysis} was also added to the ensemble, giving the ensemble access to the explicit linguistic features extracted from the text.
@@ -259,94 +254,220 @@ In the stacking approach, the predictions of all base classifiers on the trainin
 \subsection{Evaluation}
 \label{sec:evaluation}
 
-\subsubsection{Classification Metrics} All classifiers are evaluated on a held-out test set using multiple performance metrics: accuracy, precision, recall, F1-score (macro, weighted, and per-class), AUROC (Area Under the ROC Curve). For the ensemble, both individual model performance and complete ensemble performance are reported, to allow comparison between the internal ensemble methods and the overall ensemble performance.
+\subsubsection{Classification Metrics} All classifiers are evaluated on a held-out test set using multiple performance metrics: accuracy, precision, recall, F1-score (macro, weighted, and per-class), and AUROC (Area Under the ROC Curve). AUROC provides a threshold-independent measure of classifier performance across all classification thresholds (0-1, with higher values indicating better discrimination between classes), with random baseline performance at 0.5. For the ensemble, both individual model performance and complete ensemble performance are reported, to allow comparison between the internal ensemble methods and the overall ensemble performance.
 
-
-\paragraph{ROC Curve Analysis} ROC curves are generated for all classifiers to visualize the trade-off between true positive rate and false positive rate across different classification thresholds. The AUROC scores give a single scalar metric summarizing classifier performance across all thresholds (0-1, higher values indicating better discrimination between classes). Random baseline performance (AUROC = 0.5) is included for reference.
-
-
-
-\subsubsection{Feature Importance Analysis:} For the feature-based analysis, we extract and compare feature importances from each model: absolute coefficient values from logistic regression (normalized to sum to 1), Gini importance from random forest, and gain-based importance from XGBoost. By ranking features across models, we identify which linguistic patterns are consistently discriminative regardless of the classification algorithm.
+\subsubsection{Feature Importance Analysis} For the feature-based analysis, we extract and compare feature importances from each model: absolute coefficient values from logistic regression (normalized to sum to 1), Gini importance from random forest, and gain-based importance from XGBoost. By ranking features across models, we identify which linguistic patterns are consistently discriminative regardless of the classification algorithm.
 
 \paragraph{SHAP Summary Plots}
-SHAP (SHapley Additive exPlanations) values are calculated and visualized for the XGBoost classifier to provide interpretable explanations of feature contributions using the shap library \citep{shap_library}. The SHAP summary plots visualize the distribution and magnitude of each feature's impact across all test predictions by the XGBoost model, showing which features are most influential for the model's decisions, and in which direction.
-
+SHAP (SHapley Additive exPlanations) values are calculated and visualized for the XGBoost classifier to provide interpretable explanations of feature contributions using the shap library \citep{shap_library}. The SHAP summary plot visualizes the distribution and magnitude of each feature's impact across all test predictions by the XGBoost model, showing which features are most influential for the model's decisions, and in which direction.
 
 \section{Experiment and Results}
 \label{sec:experiment-results}
 % Describe your experiment setup, evaluation process and report your project's outcomes, such as classification accuracy or any pertinent evaluation metrics. Include any noteworthy findings that arose from your analysis.
 \subsection{Experiment Setup}
 \label{sec:experiment-setup}
+The complete implementation of this project is available in the github repository nlp-ai-detector \citep{githubrepository}.
 
 \subsubsection{Dataset Configuration}
-The combined dataset consisted of 172,000 samples from the datasets described in Section \ref{sec:data} and was balanced per source and per class as described in Section \ref{sec:dataset-balancing}. The data was split into training (80\%) and test (20\%) sets using stratified sampling with a fixed random seed (42) to ensure reproducibility and maintain class balance across splits, giving 137,600 training samples and 34,400 test samples.
+The combined dataset consisted of 112,848 samples from the datasets described in Section \ref{sec:data} and was balanced per source and per class as described in Section \ref{sec:dataset-balancing}. Table \ref{tab:combined-dataset} shows the contribution of each source to the final combined dataset. The data was split into training (80\%) and test (20\%) sets using stratified sampling with a fixed seed to ensure reproducibility and maintain class balance across splits, giving 90,278 training samples and 22,570 test samples.
 
-\subsubsection{Model Hyperparameters}
+\begin{table}[t]
+\centering
+\footnotesize
+\begin{tabular}{lrr}
+\toprule
+\textbf{Dataset} & \textbf{Samples} & \textbf{Proportion (\%)} \\
+\midrule
+HC3 & 43,000 & 38.1 \\
+DAIGT V2 & 34,994 & 31.0 \\
+sunilthite & 23,274 & 20.6 \\
+AH\&AITD & 11,580 & 10.3 \\
+\midrule
+\textbf{Total} & \textbf{112,848} & \textbf{100.0} \\
+\bottomrule
+\end{tabular}
+\caption{Combined dataset composition}
+\label{tab:combined-dataset}
+\end{table}
+
+\subsubsection{LLM Setup}
+The LLM-models were downloaded from Hugging Face, and run using the transformers library \citep{wolf-etal-2020-transformers}. 
 The models were configured with the following hyperparameters:
 
 \paragraph{Feature-Based Classifiers}
-\begin{itemize}[noitemsep,nolistsep]
-    \item \textbf{Logistic Regression}: Default scikit-learn parameters, random state 42
-    \item \textbf{Random Forest}: Default scikit-learn parameters, max\_depth 10, random state 42
-    \item \textbf{XGBoost (feature-based)}: 100 estimators, max depth 6, learning rate 0.1, random state 42, eval\_metric 'logloss'
-\end{itemize}
+Logistic Regression used default scikit-learn parameters with random state 42. Random Forest was configured with max depth 10 and random state 42. XGBoost used 100 estimators, max depth 6, learning rate 0.1, random state 42, and eval metric 'logloss'.
 
 \paragraph{Transformer-Based Classifiers}
 BERT (\texttt{google-bert/bert-base-uncased}) and DeBERTa (\texttt{microsoft/deberta-v3-base}) classifiers were configured identically: maximum sequence length 128 tokens, 3 training epochs, learning rate 0.005, batch size 64. For both models, pre-trained embeddings were frozen and only a linear classification head was trained.
 
 \paragraph{Naive Bayes Classifiers}
-\begin{itemize}[noitemsep,nolistsep]
-    \item \textbf{Naive Bayes (full vocabulary)}: Alpha smoothing parameter 1.0, bag-of-words features using CountVectorizer
-    \item \textbf{Naive Bayes (no stopwords)}: Alpha smoothing parameter 1.0, bag-of-words features using CountVectorizer with stopwords 'english' removed
-\end{itemize}
+Both Naive Bayes classifiers used alpha smoothing parameter 1.0 and bag-of-words features with CountVectorizer. The first used the full vocabulary, while the second had 'english' stopwords removed.
 
 \paragraph{Ensemble Configuration}
-\begin{itemize}[noitemsep,nolistsep]
-    \item \textbf{Majority Voting}: Unweighted voting across the five base classifiers
-    \item \textbf{Stacking}: meta-classifiers Logistic Regression, Random Forest, and XGBoost with library default parameters
-\end{itemize}
+The majority voting ensemble used unweighted voting across the five base classifiers. For stacking, all meta-classifiers Logistic Regression, Random Forest, and XGBoost, used library default parameters.
 
 \paragraph{Perplexity Calculation}
 Perplexity features were computed using the \texttt{EleutherAI/pythia-1.4b} model with a maximum sequence length of 1,536 tokens and a stride of 1,536 to avoid overlapping windows.
 
-\FloatBarrier
+% \FloatBarrier
 \subsection{Results}
 \label{sec:results}
 
-\subsubsection{Feature Importance Analysis}
+\subsubsection{Feature-Based Analysis}
+
+\paragraph{Classification Performance}
+Table \ref{tab:feature-based-results} presents the performance of the three feature-based classifiers on the test set (22,570 samples, 11,285 per class). XGBoost achieved the highest performance with 97.45\% accuracy and 0.997 AUROC, followed by Random Forest (96.06\% accuracy, 0.993 AUROC) and Logistic Regression (92.82\% accuracy, 0.972 AUROC). 
+\begin{table}[t]
+\centering
+\footnotesize
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{@{}lccc@{}}
+\toprule
+\textbf{Metric} & \textbf{Logistic Regr.} & \textbf{Random Forest} & \textbf{XGBoost} \\
+\midrule
+Accuracy & 0.928 & 0.961 & \textbf{0.975} \\
+AUROC & 0.972 & 0.993 & \textbf{0.997} \\
+\midrule
+\multicolumn{4}{@{}l}{\textit{Human-Written}} \\
+Precision & 0.931 & 0.949 & \textbf{0.969} \\
+Recall & 0.925 & 0.973 & \textbf{0.980} \\
+F1-Score & 0.928 & 0.961 & \textbf{0.975} \\
+\midrule
+\multicolumn{4}{@{}l}{\textit{AI-Generated}} \\
+Precision & 0.926 & 0.973 & \textbf{0.980} \\
+Recall & 0.931 & 0.948 & \textbf{0.969} \\
+F1-Score & 0.928 & 0.960 & \textbf{0.974} \\
+\midrule
+F1 (Macro) & 0.928 & 0.961 & \textbf{0.975} \\
+F1 (Weighted) & 0.928 & 0.961 & \textbf{0.975} \\
+\bottomrule
+\end{tabular}
+}
+\caption{Performance metrics for feature-based classifiers. Best values in bold.}
+\label{tab:feature-based-results}
+\end{table}
+
+\paragraph{Feature Importance Analysis}
+Figures \ref{fig:lr-features}, \ref{fig:rf-features}, and \ref{fig:xgb-features} show the top 10 features for each classifier. Perplexity dominates across all models (importance 0.334-0.430), followed by lexical features (average word length, hapax legomena ratio). The models show differences in which type of features are more discriminative: Logistic Regression and Random Forest emphasize syntactic complexity (four syntactic features each), while XGBoost relies more heavily on POS ratios (four POS features vs. one for LR and none for RF).
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.8\columnwidth]{../plots/logistic_regression_features.png}
+\caption{Top 10 feature importances for Logistic Regression classifier}
+\label{fig:lr-features}
+\end{figure}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.8\columnwidth]{../plots/random_forest_features.png}
+\caption{Top 10 feature importances for Random Forest classifier}
+\label{fig:rf-features}
+\end{figure}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.8\columnwidth]{../plots/xgboost_features.png}
+\caption{Top 10 feature importances for XGBoost classifier}
+\label{fig:xgb-features}
+\end{figure}
+
+
+\paragraph{SHAP Summary Plot}
 Figure \ref{fig:shap-summary} shows the SHAP analysis for the XGBoost classifier. Perplexity is the most discriminative feature, followed by lexical features (hapax legomena ratio, average word length, RTTR). High perplexity values (red) are strongly associated with human-written text, while low perplexity (blue) is strongly associated with AI-generated text. For the lexical features, lower values are associated with human-written text, that is less unique words, shorter words and a smaller range of words is associated with human-written text.
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=\columnwidth]{../plots/xgboost_results_20251106_144223_shap_summary.png}
-\caption{SHAP summary plot for XGBoost classifier. Color indicates feature value (red=high, blue=low); horizontal position shows impact on model output (positive values = AI-generated, negative values = human-written).}
+\includegraphics[width=\columnwidth]{../plots/shap_plot.png}
+\caption{SHAP summary plot for XGBoost classifier. Positive values indicate AI-generated}
 \label{fig:shap-summary}
 \end{figure}
 
+\subsubsection{Ensemble-Based Detector}
 
+\paragraph{Classification Performance}
+Table \ref{tab:ensemble-component-results} presents the performance of all classifiers in the ensemble-based detector. The feature-based XGBoost classifier achieved the highest performance (97.5\% accuracy, 0.997 AUROC). Among the text-based classifiers, DeBERTa performed best (94.2\% accuracy, 0.988 AUROC), followed by BERT (92.1\% accuracy, 0.975 AUROC).
 
+\begin{table}[t]
+\centering
+\footnotesize
+\begin{tabular}{@{}lccc@{}}
+\toprule
+\textbf{Classifier} & \textbf{Accuracy} & \textbf{Macro F1} & \textbf{AUROC} \\
+\midrule
+Random Classifier & 0.494 & 0.494 & 0.500 \\
+\midrule
+Naive Bayes & 0.848 & 0.848 & 0.918 \\
+NB (No Stopwords) & 0.852 & 0.851 & 0.920 \\
+BERT & 0.921 & 0.921 & 0.975 \\
+% TODO! I couldn't rerun DeBERTa on the reported 112k dataset, so these numbers are not updated. 
+DeBERTa & 0.942 & 0.942 & 0.988 \\
+XGBoost & \textbf{0.975} & \textbf{0.975} & \textbf{0.997} \\
+\bottomrule
+\end{tabular}
+\caption{Performance comparison of ensemble component models. Best values in bold.}
+\label{tab:ensemble-component-results}
+\end{table}
+
+\paragraph{Ensemble Performance}
+\label{tab:ensemble-performance}
+%  TODO 
 
 \section{Discussion and Conclusion}
 \label{sec:discussion-conclusion}
 % Concisely assess your project, addressing errors and their potential causes. Discuss method limitations, dataset issues, and consider alternative approaches. Briefly explore ethical implications and societal impact of deploying your NLP solutions, suggesting ways to address ethical concerns. Summarise your conclusions.
+
+\subsection{Feature Importance Findings}
+\label{sec:feature-importance-discussion}
+The consistency of perplexity as the top-ranked feature across all three models (importance scores: 0.334-0.430) indicates that perplexity captures fundamental differences in text generation patterns. As expected, the direction of this relationship is that a higher perplexity score is indicative of human-written text, i.e. that AI text is more predictable to the Pythia 1.4B model, likely because there are similarities in the training data of different LLMs. 
+
+Lexical features are also consistently among the top discriminators across all models. AI-generated text is characterized by longer words and greater vocabulary diversity. This shows that modern LLMs employ a more varied vocabulary than human writers, possibly reflecting their large and diverse training corpora, where the average human vocabulary reaches natural limits and domain constraints. 
+
+Apart from perplexity, the models show differences in the feature importance rankings. Logistic Regression and Random Forest emphasize syntactic complexity features (parse depth variance, sentence structure), while XGBoost relies on simpler POS-based features. XGBoost achieves the highest performance (97.45\% accuracy) while using arguably simpler features rather than more computationally expensive and complex syntactic parsing-based features. This suggests XGBoost's gradient boosting effectively learns relationships between basic ratio-features that compensate for syntactic information. The specific POS features it emphasizes, ratios of proper nouns, verbs, interjections, and unusual tokens, may represent basic stylistic differences between human and AI-generated text. 
+
+
+\subsection{Ensemble-Based Detector vs. Individual Classifiers}
+\label{sec:ensemble-based-detector-discussion}
+% TODO 
+
+
+
+\subsection{Method Limitations}
+\label{sec:method-limitations}
+A limitation of this project is that our datasets include only samples that are either entirely human-written or entirely AI-generated, with no mixed or (adversarially) modified samples. In real-world scenarios, users may use different techniques to fool the detectors and evade detection. Our models were not trained or evaluated on such samples and their robustness to these scenarios would require furhter evaluation before practical deployment. 
+
+The perplexity feature, which shows a high degree of discriminative power in our experiments, is calculated using a single language model, Pythia 1.4B trained on the Pile dataset, and may not generalize to text generated by models trained on substantially different data distributions. 
+
+The generalizability of our models is also limited by the fact that we do not test LLM-models beyond those represented in our datasets, which do not include the latest models, such as GPT-5.
+
+
+
 \subsection{Ethical and Societal Considerations}
 \label{sec:ethical-considerations}
 This project develops an AI detection tool, which can be used to detect AI-generated text in a range of domains such as academia, journalism or creative writing. Our intention is that knowledge about whether a text is AI-generated or not can be used in a "positive" way for society in general. In the mentioned domains, this could be help prevent fraud in academic settings, or help journalists flag sources that may be AI-generated and require further investigation. Our tool explicitly tackles the problem of adversarial attacks against AI-detection tools by using an ensemble of classifiers where one will have to fool multiple models to successfully fool the tool. However, it is important to reflect upon how such a tool can be used to improve and create adversarial attacks/tools, both against this specific tool, but also against AI-detectors in general, by training an adversarial model by using this tool in a detector-evasion setup. 
 
-Another ethical consideration is that this tool does not have zero false positive or false negative rates, meaning that there is a risk of human-written text being incorrectly classified as AI-generated, or AI-generated text being incorrectly classified as human-written. 
-Incorrect classification of human-written text can have serious consequences for the individual, such as a student being accused of cheating, possibly leading to failing a course or even being expelled from a university. Incorrect classification of AI-generated text on the other hand can lead to spread of misinformation such as "fake" news or made up scientific findings with a "stamp" of authenticity. To minimize these potential harms, a tool such as this should be deployed with transparent confidence scores and clear disclaimers and explanations about its limitations. 
+Another ethical consideration is that this tool does not have zero false positive or false negative rates. Incorrect classification of human-written text can have serious consequences for the individual, such as a student being accused of cheating, possibly leading to failing a course or even being expelled from a university. Incorrect classification of AI-generated text on the other hand can lead to spread of misinformation such as "fake" news or made up scientific findings with a "stamp" of authenticity. To minimize these potential harms, a tool such as this should be deployed with transparent confidence scores and clear disclaimers and explanations about its limitations. 
 
 \subsection{Conclusion}
 \label{sec:conclusion}
+This project investigated which linguistic and statistical features are most effective for AI-text detection (RQ1) and whether ensemble-based classification improves robustness (RQ2). Regarding RQ1, perplexity is identified as the most dominant discriminative feature across all models, with higher perplexity indicating human-written text. Lexical features, particularly average word length, hapax legomena ratio, and RTTR, consistently ranked among the top discriminators, indicating that AI-generated text has greater vocabulary diversity and longer words than human writing. The XGBoost classifier reached the highest performance (97.45\% accuracy, 0.997 AUROC), demonstrating that explicit linguistic features can be an effective signal for AI text detection.
 
+Regarding RQ2, we were unable to demonstrate clear improvements from the ensemble approach, as the XGBoost classifier with its overall high performance dominated the ensemble's predictions. Ensemble methods are theoretically most beneficial in scenarios of adversarial attacks and domain shifts, but we have not performed such testing and cannot evaluate whether they improve detector robustness in these contexts. Future work should assess whether the added complexity provides meaningful benefits over a single well-performing feature-based classifier.
 
+\balance
 
 \bibliographystyle{acl_natbib}
 \bibliography{references}
 
-\appendix
-\label{sec:appendix}
 
-\section{Example appendix}
+\appendix
+\section*{Appendix}
+
+
+\section{Full List of Extracted Features}
+\label{sec:full-list-of-features}
+
+{\footnotesize\ttfamily
+average\_word\_length, word\_length\_variance, rttr\_root\_type\_token\_ratio, hapax\_legomena\_ratio, average\_sentence\_length, sentence\_length\_variance, average\_parse\_depth, maximum\_parse\_depth, parse\_depth\_variance, comma\_ratio, period\_ratio, exclamation\_mark\_ratio, question\_mark\_ratio, punctuation\_per\_word, pos\_ratio\_adj, pos\_ratio\_adp, pos\_ratio\_adv, pos\_ratio\_aux, pos\_ratio\_conj, pos\_ratio\_cconj, pos\_ratio\_det, pos\_ratio\_intj, pos\_ratio\_noun, pos\_ratio\_num, pos\_ratio\_part, pos\_ratio\_pron, pos\_ratio\_propn, pos\_ratio\_punct, pos\_ratio\_sconj, pos\_ratio\_sym, pos\_ratio\_verb, pos\_ratio\_x, noun\_to\_verb\_ratio, sentence\_length\_burstiness, sentence\_length\_iqr, position\_burstiness\_diff, long\_sentence\_ratio, word\_length\_burstiness, clause\_length\_burstiness, perplexity
+}
 
 \end{document}

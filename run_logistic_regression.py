@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import roc_auc_score
 from linguistic_feature_model_utils import (
     setup_argparser,
     load_config,
@@ -33,6 +34,16 @@ lr_model = LogisticRegression(random_state=random_state, max_iter=1000)
 lr_model.fit(X_train_scaled, y_train)
 
 y_pred_lr, accuracy_lr, f1_macro_lr, f1_weighted_lr = evaluate_model(lr_model, X_test_scaled, y_test, f)
+
+
+
+
+
+
+
+y_pred_proba = lr_model.predict_proba(X_test_scaled)[:, 1]
+auroc_score = roc_auc_score(y_test, y_pred_proba)
+dual_print(f"\nAUROC Score: {auroc_score:.4f}", f)
 
 # normalize, since logistic regression gives coefficients, while random forest and zgboost already normalize. 
 abs_coef = np.abs(lr_model.coef_[0])
