@@ -17,6 +17,7 @@
 \usepackage{multirow}
 \usepackage{placeins}
 \usepackage{float}
+\usepackage{balance}
 % skip huge vertical space after title/author
 \setlength\titlebox{8\baselineskip}
 
@@ -452,7 +453,7 @@ This project investigated which linguistic and statistical features are most eff
 
 Regarding RQ2, we were unable to demonstrate clear improvements from the ensemble approach, as the XGBoost classifier with its overall high performance dominated the ensemble's predictions. Ensemble methods are theoretically most beneficial in scenarios of adversarial attacks and domain shifts, but we have not performed such testing and cannot evaluate whether they improve detector robustness in these contexts. Future work should assess whether the added complexity provides meaningful benefits over a single well-performing feature-based classifier.
 
-
+\balance
 
 \bibliographystyle{acl_natbib}
 \bibliography{references}
