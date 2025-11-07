@@ -2,6 +2,8 @@
 
 % Change "review" to "final" to generate the final (sometimes called camera-ready) version.
 % Change to "preprint" to generate a non-anonymous version with page numbers.
+
+%  seems the only difference between preprint and final is the page numbers, so we can just use preprint.
 \usepackage[preprint]{acl}
 \usepackage{times}
 \usepackage{latexsym}
@@ -40,7 +42,6 @@
 
 
 
-
 % Citation commands for template: 
 % ------------------------------- 
 % \citet{key}      -> Author (year)           [cite in text]
@@ -71,9 +72,9 @@
 \label{sec:introduction}
 % State the specific problems you aimed to address or the questions you sought to answer. If your project was inspired by a particular paper (or papers), which motivated your interest in the problem, kindly reference them here.
 
-The availability of large language models (LLMs) has created an urgent need for reliable detection of AI-generated text in domains such as academia and journalism. Recent surveys indicate that hybrid approaches to AI detection, combining statistical and neural methods, often outperform single-modality detectors in both robustness and generalization \citep{wu-etal-2025-survey, su2024robustdetectionllmgeneratedtext}.
+The availability of large language models (LLMs) creates a demand for reliable detection of AI-generated text in domains such as academia and journalism. Recent surveys indicate that hybrid approaches to AI detection, combining statistical and neural methods, often outperform single-modality detectors in both robustness and generalization \citep{wu-etal-2025-survey, su2024robustdetectionllmgeneratedtext}.
 
-Motivated by these findings, this project takes a dual approach to AI text detection. First, we conduct a systematic feature-based analysis to identify which linguistic and statistical patterns are most discriminative. Second, we implement an ensemble-based detector combining multiple classification approaches to explore whether such combinations can improve practical deployment robustness.
+Motivated by these findings, this project takes a dual approach to AI text detection. First, we conduct a feature-based analysis to identify which linguistic and statistical patterns are most discriminative. Second, we implement an ensemble-based detector combining multiple classification approaches to explore whether such combinations can improve practical deployment robustness.
 
 This project addresses two research questions:
 
@@ -88,29 +89,20 @@ This project addresses two research questions:
 
 However, robustness against adversarial attacks remains a significant challenge. \citet{weber-wulff_testing_2023} examine the reliability of AI text detection tools in academic settings and found that obfuscation techniques, e.g. manual editing and machine paraphrasing, significantly reduce the accuracy of detection tools, with approximately 50\% of the texts that had undergone some type of post-generation editing being misclassified as human-written. Similar results, with detectors being less accurate when subjected to adversarial attacks, are reported by \citet{wu-etal-2025-survey} and \citet{pudasaini_survey_2025}. 
 
-Multiple surveys indicate that hybrid approaches, combining statistical and neural methods, often outperform single-modality detectors in robustness and generalization \citep{wu-etal-2025-survey, su2024robustdetectionllmgeneratedtext}. These findings motivate our dual approach: first analyzing individual linguistic and statistical features for interpretability, and second combining multiple classifiers in an ensemble to improve robustness against adversarial attacks and domain shifts.
+Multiple surveys indicate that hybrid approaches, combining statistical and neural methods, often outperform single-modality detectors in robustness and generalization \citep{wu-etal-2025-survey, su2024robustdetectionllmgeneratedtext}.
 
 \section{Data}
 \label{sec:data}
 % Describe the dataset employed in your project. Explain dataset properties, its composition (documents, sentences, words), and labelling information (by whom, how).Indicate the source if it's an existing dataset, or if you created your own, describe the process.
 
-To ensure our model generalizes across diverse English language sources, domains, and LLMs, and to mitigate overfitting to any single dataset's biases, we will utilize multiple datasets for training and evaluation. This approach allows for robust testing of features and hybrids in varied contexts, such as essays, Q\&A, and long-form texts from different LLMs.
-
-\begin{itemize}[noitemsep,nolistsep]
-% \item AI Text Detection Pile (Hugging Face): diverse texts (Reddit, Wikipedia, books) \citep{artem9k_ai_text_detection_pile_2023}.
-\item AH\&AITD (Arslan's Human and AI Text Database): texts across domains (articles, abstracts, stories, news, reviews) \citep{akram2023ahaitd}.
-\item LLM - Detect AI Generated Text Dataset (Kaggle sunilthite): essays \citep{thite2023llm}.
-% \item LLM - Detect AI Generated Text (Kaggle Competition): essays \citep{kaggle2023llmdetect}.
-\item DAIGT V2 Train Dataset (Kaggle): essays \citep{deotte2023daigtv2}.
-\item Human ChatGPT Comparison Corpus (HC3): Q\&A from domains (finance, medicine, law, open) \citep{guo-etal-2023-hc3}.
-\end{itemize}
+To ensure our model generalizes across diverse English language sources, domains, and LLMs, and to mitigate overfitting to any single dataset's biases, we utilize multiple datasets for training and evaluation. This approach allows for robust testing of features and hybrids in varied contexts. The datasets include AH\&AITD (Arslan's Human and AI Text Database) with texts across domains including articles, abstracts, stories, news, and reviews \citep{akram2023ahaitd}; the LLM - Detect AI Generated Text Dataset (Kaggle sunilthite) containing essays \citep{thite2023llm}; the DAIGT V2 Train Dataset (Kaggle) with essays \citep{deotte2023daigtv2}; and the Human ChatGPT Comparison Corpus (HC3) comprising Q\&A from domains such as finance, medicine, law, and open-domain questions \citep{guo-etal-2023-hc3}.
 
 \subsection{Dataset Balancing}
 \label{sec:dataset-balancing}
 The datsets showed varying degrees of class imbalance between the target classes human-written (0) and AI-generated (1), ranging from 31.5\% AI-generated in the HC3 dataset to 50.0\% AI-generated in the AH\&AITD dataset. The dataset's class distribution is shown in Table \ref{tab:dataset-class-distribution}.
 
 The dataset was balanced using a per-source strategy, where each source contributes an equal number of human-written and AI-generated samples according to its configured proportion of the total dataset size, and limited by the smallest class per source. This ensures balanced representation across both the source datasets and the target classes.
-
+% NOTE this table could totally be moved to appendix.
 \begin{table}[t]
 \centering
 \footnotesize
@@ -162,10 +154,10 @@ The ratio of punctuation marks to word count was calculated for comma, period, e
 POS tags were extracted using spaCy's coarse-grained POS tags (\texttt{token.pos\_}) rather than fine-grained tags (\texttt{token.tag\_}) to capture overall patterns in word class usage, fine grained tags were excluded as they may be too specific for the objective, and yield sparse data. The ratio of each POS category (noun, verb, adjective, adverb, etc.) to total tokens was calculated as well as a noun-to-verb ratio as a derived feature.
 
 \paragraph{Perplexity}
-Perplexity is defined as the inverse test set probability according to the model used for calculating the perplexity score, normalized by the length of the text \citep{jm3}. It is an evaluation of the model's ability to predict uniformly among the set of tokens in a corpus, or in other words how "surprised" the model is by the text, where a lower perplexity indicates more predictable/less surprising text for the model. Perplexity was calculated using EleutherAI's Pythia 1.4B model \citep{biderman2023pythia}, an open-source model trained on the Pile dataset \citep{pile}. The model was downloaded from Hugging Face, and run using the transformers library \citep{wolf-etal-2020-transformers}. This model was chosen for its balance between computational efficiency and generalization due to its diverse training data, which includes web text, books, and academic sources similar to the datasets of this experiment.
+Perplexity is defined as the inverse test set probability according to the model used for calculating the perplexity score, normalized by the length of the text \citep{jm3}. It is an evaluation of the model's ability to predict uniformly among the set of tokens in a corpus, or in other words how "surprised" the model is by the text, where a lower perplexity indicates more predictable/less surprising text for the model. Perplexity was calculated using EleutherAI's Pythia 1.4B model \citep{biderman2023pythia}, an open-source model trained on the Pile dataset \citep{pile}. The model was chosen for its balance between computational efficiency and generalization due to its diverse training data, which includes web text, books, and academic sources similar to the datasets of this experiment.
 
 \paragraph{Burstiness Features}
-In statistics, burstiness is a measure of the variability in data points over time, i.e. the variation in the frequency of an event. For each text input, ten burstiness features were originally extracted, measuring variation at the sentence, word, and clause levels. The core burstiness metric uses the Goh-Barabasi coefficient \citep{Goh_2008}: \(B = \frac{\sigma - \mu}{\sigma + \mu}\), where \(\sigma\) is the standard deviation and \(\mu\) is the mean, this measure is designed for analyzing variation in sequential data distributions, which is what we wish to analyze. The formula yields a burstiness score between -1 (uniform) and 1 (highly variable). Features include sentence length burstiness, interquartile range-based dispersion, positional variation (comparing first and second halves), long sentence ratio, word length burstiness, and clause length burstiness. After correlation analysis, six burstiness features were retained.
+In statistics, burstiness is a measure of the variability in data points over time. The core burstiness metric uses the Goh-Barabasi coefficient \citep{Goh_2008}: \(B = \frac{\sigma - \mu}{\sigma + \mu}\), where \(\sigma\) is the standard deviation and \(\mu\) is the mean, this measure is designed for analyzing variation in sequential data distributions, which is what we wish to analyze. The formula yields a burstiness score between -1 (uniform) and 1 (highly variable). For each text input, ten burstiness features were originally extracted, measuring variation at the sentence, word, and clause levels, including sentence length burstiness, positional variation (comparing first and second halves) and clause length burstiness. After correlation analysis, six burstiness features were retained.
 
 
 \subsubsection{Feature Selection}
@@ -226,12 +218,12 @@ To reduce collinearity, a correlation analysis was performed on all the describe
 
 \subsection{Approach 2: Ensemble-Based Detector}
 \label{sec:ensemble-based-detector}
-The ensemble-based detector combines five classifiers to build a practical, robust AI text detector. The classifier outputs are combined using two methods: voting, also known as the weighted majority algorithm, and stacking.
+The ensemble-based detector combines five classifiers to build a practical, robust AI text detector. The classifier outputs are combined using two methods: majority voting and stacking.
 
 \subsubsection{Base Classifiers}
 \label{sec:base-classifiers}
-The ensemble-based detector is made up of multiple text-based classifiers and the feature-based classifiers from Approach 1 (Section \ref{sec:feature-based-analysis}) leveraging different perspectives on the classification task. 
-The LLM-models were downloaded from Hugging Face, and run using the transformers library \citep{wolf-etal-2020-transformers}. 
+
+The ensemble-based detector is made up of multiple text-based classifiers and the XGBoost classifier from Approach 1 (Section \ref{sec:feature-based-analysis}) leveraging different perspectives on the classification task. 
 
 \paragraph{BERT Classifier}
 BERT captures contextual word representations through its bidirectional transformer architecture, letting it capture semantic patterns in text.
@@ -242,7 +234,7 @@ A DeBERTa-based classifier using the \texttt{microsoft/deberta-v3-base} model. D
 
 
 \paragraph{Naive Bayes Classifiers}
-Two Naive Bayes classifiers were implemented for the ensemble using sklearn's MultinomialNB \citep{scikit-learn} with bag-of-word features implemented using CountVectorizer \citep{scikit-learn}. The first model uses the full vocabulary, while the second model has stopwords removed using sklearn's English stopwords.
+Two Naive Bayes classifiers were included in the ensemble, one using the full vocabulary and one with stopwords removed.
 
 \paragraph{XGBoost Classifier}
 The XGBoost classifier described in section \ref{sec:feature-based-analysis} was also added to the ensemble, giving the ensemble access to the explicit linguistic features extracted from the text.
@@ -263,13 +255,10 @@ In the stacking approach, the predictions of all base classifiers on the trainin
 
 \subsubsection{Classification Metrics} All classifiers are evaluated on a held-out test set using multiple performance metrics: accuracy, precision, recall, F1-score (macro, weighted, and per-class), and AUROC (Area Under the ROC Curve). AUROC provides a threshold-independent measure of classifier performance across all classification thresholds (0-1, with higher values indicating better discrimination between classes), with random baseline performance at 0.5. For the ensemble, both individual model performance and complete ensemble performance are reported, to allow comparison between the internal ensemble methods and the overall ensemble performance.
 
-
-
 \subsubsection{Feature Importance Analysis} For the feature-based analysis, we extract and compare feature importances from each model: absolute coefficient values from logistic regression (normalized to sum to 1), Gini importance from random forest, and gain-based importance from XGBoost. By ranking features across models, we identify which linguistic patterns are consistently discriminative regardless of the classification algorithm.
 
 \paragraph{SHAP Summary Plots}
-SHAP (SHapley Additive exPlanations) values are calculated and visualized for the XGBoost classifier to provide interpretable explanations of feature contributions using the shap library \citep{shap_library}. The SHAP summary plots visualize the distribution and magnitude of each feature's impact across all test predictions by the XGBoost model, showing which features are most influential for the model's decisions, and in which direction.
-
+SHAP (SHapley Additive exPlanations) values are calculated and visualized for the XGBoost classifier to provide interpretable explanations of feature contributions using the shap library \citep{shap_library}. The SHAP summary plot visualizes the distribution and magnitude of each feature's impact across all test predictions by the XGBoost model, showing which features are most influential for the model's decisions, and in which direction.
 
 \section{Experiment and Results}
 \label{sec:experiment-results}
@@ -299,30 +288,21 @@ AH\&AITD & 11,580 & 10.3 \\
 \label{tab:combined-dataset}
 \end{table}
 
-\subsubsection{Model Hyperparameters}
+\subsubsection{LLM Setup}
+The LLM-models were downloaded from Hugging Face, and run using the transformers library \citep{wolf-etal-2020-transformers}. 
 The models were configured with the following hyperparameters:
 
 \paragraph{Feature-Based Classifiers}
-\begin{itemize}[noitemsep,nolistsep]
-    \item \textbf{Logistic Regression}: Default scikit-learn parameters, random state 42
-    \item \textbf{Random Forest}: Default scikit-learn parameters, max\_depth 10, random state 42
-    \item \textbf{XGBoost (feature-based)}: 100 estimators, max depth 6, learning rate 0.1, random state 42, eval\_metric 'logloss'
-\end{itemize}
+Logistic Regression used default scikit-learn parameters with random state 42. Random Forest was configured with max depth 10 and random state 42. XGBoost used 100 estimators, max depth 6, learning rate 0.1, random state 42, and eval metric 'logloss'.
 
 \paragraph{Transformer-Based Classifiers}
 BERT (\texttt{google-bert/bert-base-uncased}) and DeBERTa (\texttt{microsoft/deberta-v3-base}) classifiers were configured identically: maximum sequence length 128 tokens, 3 training epochs, learning rate 0.005, batch size 64. For both models, pre-trained embeddings were frozen and only a linear classification head was trained.
 
 \paragraph{Naive Bayes Classifiers}
-\begin{itemize}[noitemsep,nolistsep]
-    \item \textbf{Naive Bayes (full vocabulary)}: Alpha smoothing parameter 1.0, bag-of-words features using CountVectorizer
-    \item \textbf{Naive Bayes (no stopwords)}: Alpha smoothing parameter 1.0, bag-of-words features using CountVectorizer with stopwords 'english' removed
-\end{itemize}
+Both Naive Bayes classifiers used alpha smoothing parameter 1.0 and bag-of-words features with CountVectorizer. The first used the full vocabulary, while the second had 'english' stopwords removed.
 
 \paragraph{Ensemble Configuration}
-\begin{itemize}[noitemsep,nolistsep]
-    \item \textbf{Majority Voting}: Unweighted voting across the five base classifiers
-    \item \textbf{Stacking}: meta-classifiers Logistic Regression, Random Forest, and XGBoost with library default parameters
-\end{itemize}
+The majority voting ensemble used unweighted voting across the five base classifiers. For stacking, all meta-classifiers Logistic Regression, Random Forest, and XGBoost, used library default parameters.
 
 \paragraph{Perplexity Calculation}
 Perplexity features were computed using the \texttt{EleutherAI/pythia-1.4b} model with a maximum sequence length of 1,536 tokens and a stride of 1,536 to avoid overlapping windows.
@@ -396,14 +376,14 @@ Figure \ref{fig:shap-summary} shows the SHAP analysis for the XGBoost classifier
 \begin{figure}[t]
 \centering
 \includegraphics[width=\columnwidth]{../plots/shap_plot.png}
-\caption{SHAP summary plot for XGBoost classifier. Color indicates feature value (red=high, blue=low); horizontal position shows impact on model output (positive values = AI-generated, negative values = human-written).}
+\caption{SHAP summary plot for XGBoost classifier. Positive values indicate AI-generated}
 \label{fig:shap-summary}
 \end{figure}
 
 \subsubsection{Ensemble-Based Detector}
 
 \paragraph{Classification Performance}
-Table \ref{tab:ensemble-component-results} presents the performance of all classifiers in the ensemble-based detector. The feature-based XGBoost classifier achieved the highest performance (97.6\% accuracy, 0.997 AUROC). Among the text-based classifiers, DeBERTa performed best (94.2\% accuracy, 0.988 AUROC), followed by BERT (92.1\% accuracy, 0.975 AUROC).
+Table \ref{tab:ensemble-component-results} presents the performance of all classifiers in the ensemble-based detector. The feature-based XGBoost classifier achieved the highest performance (97.5\% accuracy, 0.997 AUROC). Among the text-based classifiers, DeBERTa performed best (94.2\% accuracy, 0.988 AUROC), followed by BERT (92.1\% accuracy, 0.975 AUROC).
 
 \begin{table}[t]
 \centering
@@ -427,7 +407,7 @@ XGBoost & \textbf{0.975} & \textbf{0.975} & \textbf{0.997} \\
 \end{table}
 
 \paragraph{Ensemble Performance}
-label{tab:ensemble-performance}
+\label{tab:ensemble-performance}
 %  TODO 
 
 \section{Discussion and Conclusion}
@@ -463,8 +443,7 @@ The generalizability of our models is also limited by the fact that we do not te
 \label{sec:ethical-considerations}
 This project develops an AI detection tool, which can be used to detect AI-generated text in a range of domains such as academia, journalism or creative writing. Our intention is that knowledge about whether a text is AI-generated or not can be used in a "positive" way for society in general. In the mentioned domains, this could be help prevent fraud in academic settings, or help journalists flag sources that may be AI-generated and require further investigation. Our tool explicitly tackles the problem of adversarial attacks against AI-detection tools by using an ensemble of classifiers where one will have to fool multiple models to successfully fool the tool. However, it is important to reflect upon how such a tool can be used to improve and create adversarial attacks/tools, both against this specific tool, but also against AI-detectors in general, by training an adversarial model by using this tool in a detector-evasion setup. 
 
-Another ethical consideration is that this tool does not have zero false positive or false negative rates, meaning that there is a risk of human-written text being incorrectly classified as AI-generated, or AI-generated text being incorrectly classified as human-written. 
-Incorrect classification of human-written text can have serious consequences for the individual, such as a student being accused of cheating, possibly leading to failing a course or even being expelled from a university. Incorrect classification of AI-generated text on the other hand can lead to spread of misinformation such as "fake" news or made up scientific findings with a "stamp" of authenticity. To minimize these potential harms, a tool such as this should be deployed with transparent confidence scores and clear disclaimers and explanations about its limitations. 
+Another ethical consideration is that this tool does not have zero false positive or false negative rates. Incorrect classification of human-written text can have serious consequences for the individual, such as a student being accused of cheating, possibly leading to failing a course or even being expelled from a university. Incorrect classification of AI-generated text on the other hand can lead to spread of misinformation such as "fake" news or made up scientific findings with a "stamp" of authenticity. To minimize these potential harms, a tool such as this should be deployed with transparent confidence scores and clear disclaimers and explanations about its limitations. 
 
 \subsection{Conclusion}
 \label{sec:conclusion}
