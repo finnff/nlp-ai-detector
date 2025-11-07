@@ -260,10 +260,7 @@ In the stacking approach, the predictions of all base classifiers on the trainin
 \subsection{Evaluation}
 \label{sec:evaluation}
 
-\subsubsection{Classification Metrics} All classifiers are evaluated on a held-out test set using multiple performance metrics: accuracy, precision, recall, F1-score (macro, weighted, and per-class), AUROC (Area Under the ROC Curve). For the ensemble, both individual model performance and complete ensemble performance are reported, to allow comparison between the internal ensemble methods and the overall ensemble performance.
-
-
-\paragraph{ROC Curve Analysis} ROC curves are generated for all classifiers to visualize the trade-off between true positive rate and false positive rate across different classification thresholds. The AUROC scores give a single scalar metric summarizing classifier performance across all thresholds (0-1, higher values indicating better discrimination between classes). Random baseline performance (AUROC = 0.5) is included for reference.
+\subsubsection{Classification Metrics} All classifiers are evaluated on a held-out test set using multiple performance metrics: accuracy, precision, recall, F1-score (macro, weighted, and per-class), and AUROC (Area Under the ROC Curve). AUROC provides a threshold-independent measure of classifier performance across all classification thresholds (0-1, with higher values indicating better discrimination between classes), with random baseline performance at 0.5. For the ensemble, both individual model performance and complete ensemble performance are reported, to allow comparison between the internal ensemble methods and the overall ensemble performance.
 
 
 
@@ -336,16 +333,17 @@ Perplexity features were computed using the \texttt{EleutherAI/pythia-1.4b} mode
 \subsubsection{Feature-Based Analysis}
 
 \paragraph{Classification Performance}
-Table \ref{tab:feature-based-results} presents the performance of the three feature-based classifiers on the test set (22,570 samples, 11,285 per class). XGBoost achieved the highest performance with 97.45\% accuracy, followed by Random Forest (96.06\%) and Logistic Regression (92.82\%).
-
+Table \ref{tab:feature-based-results} presents the performance of the three feature-based classifiers on the test set (22,570 samples, 11,285 per class). XGBoost achieved the highest performance with 97.45\% accuracy and 0.997 AUROC, followed by Random Forest (96.06\% accuracy, 0.993 AUROC) and Logistic Regression (92.82\% accuracy, 0.972 AUROC). 
 \begin{table}[t]
 \centering
-\scriptsize
+\footnotesize
+\resizebox{\columnwidth}{!}{%
 \begin{tabular}{@{}lccc@{}}
 \toprule
-\textbf{Metric} & \textbf{Logistic Regression} & \textbf{Random Forest} & \textbf{XGBoost} \\
+\textbf{Metric} & \textbf{Logistic Regr.} & \textbf{Random Forest} & \textbf{XGBoost} \\
 \midrule
 Accuracy & 0.928 & 0.961 & \textbf{0.975} \\
+AUROC & 0.972 & 0.993 & \textbf{0.997} \\
 \midrule
 \multicolumn{4}{@{}l}{\textit{Human-Written}} \\
 Precision & 0.931 & 0.949 & \textbf{0.969} \\
@@ -361,6 +359,7 @@ F1 (Macro) & 0.928 & 0.961 & \textbf{0.975} \\
 F1 (Weighted) & 0.928 & 0.961 & \textbf{0.975} \\
 \bottomrule
 \end{tabular}
+}
 \caption{Performance metrics for feature-based classifiers. Best values in bold.}
 \label{tab:feature-based-results}
 \end{table}
