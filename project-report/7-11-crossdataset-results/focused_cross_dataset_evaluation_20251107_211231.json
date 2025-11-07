@@ -1,0 +1,201 @@
+{
+  "timestamp": "20251107_211231",
+  "experiment_type": "enhanced_cross_dataset_evaluation",
+  "classifiers": [
+    "xgboost",
+    "deberta",
+    "naive_bayes",
+    "bert",
+    "voting_ensemble",
+    "stacking_ensemble"
+  ],
+  "individual_results": {
+    "daigt_v2": {
+      "xgboost": {
+        "accuracy": 0.8459,
+        "f1_macro": 0.8363559083773615,
+        "f1_weighted": 0.8450977430230247,
+        "auroc": 0.9223992802384716,
+        "classification_report": "               precision    recall  f1-score   support\n\nHuman Written     0.8618    0.8904    0.8759      6106\n AI Generated     0.8187    0.7761    0.7968      3894\n\n     accuracy                         0.8459     10000\n    macro avg     0.8403    0.8333    0.8364     10000\n weighted avg     0.8450    0.8459    0.8451     10000\n",
+        "test_samples": 10000
+      },
+      "deberta": {
+        "accuracy": 0.9675,
+        "f1_macro": 0.9659690706600311,
+        "f1_weighted": 0.9675656834370284,
+        "auroc": 0.9923426081025997,
+        "classification_report": "               precision    recall  f1-score   support\n\nHuman Written     0.9805    0.9659    0.9732      6106\n AI Generated     0.9478    0.9700    0.9588      3894\n\n     accuracy                         0.9675     10000\n    macro avg     0.9642    0.9679    0.9660     10000\n weighted avg     0.9678    0.9675    0.9676     10000\n",
+        "test_samples": 10000
+      },
+      "naive_bayes": {
+        "accuracy": 0.788,
+        "f1_macro": 0.7437889486118461,
+        "f1_weighted": 0.7673312802610026,
+        "auroc": 0.8995913615494523,
+        "classification_report": "               precision    recall  f1-score   support\n\nHuman Written     0.7476    0.9854    0.8502      6106\n AI Generated     0.9544    0.4784    0.6374      3894\n\n     accuracy                         0.7880     10000\n    macro avg     0.8510    0.7319    0.7438     10000\n weighted avg     0.8282    0.7880    0.7673     10000\n",
+        "test_samples": 10000
+      },
+      "bert": {
+        "accuracy": 0.8674,
+        "f1_macro": 0.8555876471895134,
+        "f1_weighted": 0.8647236347478338,
+        "auroc": 0.943213908335045,
+        "classification_report": "               precision    recall  f1-score   support\n\nHuman Written     0.8539    0.9445    0.8969      6106\n AI Generated     0.8956    0.7465    0.8143      3894\n\n     accuracy                         0.8674     10000\n    macro avg     0.8747    0.8455    0.8556     10000\n weighted avg     0.8701    0.8674    0.8647     10000\n",
+        "test_samples": 10000
+      },
+      "voting_ensemble": {
+        "accuracy": 0.874,
+        "f1_macro": 0.8583490168702274,
+        "f1_weighted": 0.8687641717086921,
+        "auroc": null,
+        "classification_report": "               precision    recall  f1-score   support\n\nHuman Written     0.8357    0.9879    0.9054      6106\n AI Generated     0.9734    0.6954    0.8113      3894\n\n     accuracy                         0.8740     10000\n    macro avg     0.9045    0.8417    0.8583     10000\n weighted avg     0.8893    0.8740    0.8688     10000\n",
+        "test_samples": 10000
+      },
+      "stacking_ensemble": {
+        "accuracy": 0.8459,
+        "f1_macro": 0.8363559083773615,
+        "f1_weighted": 0.8450977430230247,
+        "auroc": null,
+        "classification_report": "               precision    recall  f1-score   support\n\nHuman Written     0.8618    0.8904    0.8759      6106\n AI Generated     0.8187    0.7761    0.7968      3894\n\n     accuracy                         0.8459     10000\n    macro avg     0.8403    0.8333    0.8364     10000\n weighted avg     0.8450    0.8459    0.8451     10000\n",
+        "test_samples": 10000
+      }
+    },
+    "sunilthite": {
+      "xgboost": {
+        "accuracy": 0.8093,
+        "f1_macro": 0.7911628964341759,
+        "f1_weighted": 0.803213269281778,
+        "auroc": 0.7966886007683612,
+        "classification_report": "               precision    recall  f1-score   support\n\nHuman Written     0.7922    0.9232    0.8527      5979\n AI Generated     0.8486    0.6399    0.7296      4021\n\n     accuracy                         0.8093     10000\n    macro avg     0.8204    0.7816    0.7912     10000\n weighted avg     0.8149    0.8093    0.8032     10000\n",
+        "test_samples": 10000
+      },
+      "deberta": {
+        "accuracy": 0.9639,
+        "f1_macro": 0.9627256241973683,
+        "f1_weighted": 0.9640210764912008,
+        "auroc": 0.9948234638194635,
+        "classification_report": "               precision    recall  f1-score   support\n\nHuman Written     0.9846    0.9545    0.9693      5979\n AI Generated     0.9353    0.9779    0.9561      4021\n\n     accuracy                         0.9639     10000\n    macro avg     0.9600    0.9662    0.9627     10000\n weighted avg     0.9648    0.9639    0.9640     10000\n",
+        "test_samples": 10000
+      },
+      "naive_bayes": {
+        "accuracy": 0.8309,
+        "f1_macro": 0.8063744574405618,
+        "f1_weighted": 0.8198672959714357,
+        "auroc": 0.9817467328137912,
+        "classification_report": "               precision    recall  f1-score   support\n\nHuman Written     0.7828    0.9925    0.8753      5979\n AI Generated     0.9814    0.5906    0.7375      4021\n\n     accuracy                         0.8309     10000\n    macro avg     0.8821    0.7916    0.8064     10000\n weighted avg     0.8627    0.8309    0.8199     10000\n",
+        "test_samples": 10000
+      },
+      "bert": {
+        "accuracy": 0.9177,
+        "f1_macro": 0.913282571711441,
+        "f1_weighted": 0.9171147935054147,
+        "auroc": 0.9740101297091422,
+        "classification_report": "               precision    recall  f1-score   support\n\nHuman Written     0.9106    0.9562    0.9329      5979\n AI Generated     0.9296    0.8605    0.8937      4021\n\n     accuracy                         0.9177     10000\n    macro avg     0.9201    0.9083    0.9133     10000\n weighted avg     0.9183    0.9177    0.9171     10000\n",
+        "test_samples": 10000
+      },
+      "voting_ensemble": {
+        "accuracy": 0.9038,
+        "f1_macro": 0.8950065508490697,
+        "f1_weighted": 0.9009559542483514,
+        "auroc": null,
+        "classification_report": "               precision    recall  f1-score   support\n\nHuman Written     0.8628    0.9978    0.9254      5979\n AI Generated     0.9958    0.7640    0.8646      4021\n\n     accuracy                         0.9038     10000\n    macro avg     0.9293    0.8809    0.8950     10000\n weighted avg     0.9163    0.9038    0.9010     10000\n",
+        "test_samples": 10000
+      },
+      "stacking_ensemble": {
+        "accuracy": 0.8426,
+        "f1_macro": 0.8232857788702873,
+        "f1_weighted": 0.8347247519410608,
+        "auroc": null,
+        "classification_report": "               precision    recall  f1-score   support\n\nHuman Written     0.8006    0.9811    0.8817      5979\n AI Generated     0.9577    0.6367    0.7649      4021\n\n     accuracy                         0.8426     10000\n    macro avg     0.8792    0.8089    0.8233     10000\n weighted avg     0.8638    0.8426    0.8347     10000\n",
+        "test_samples": 10000
+      }
+    }
+  },
+  "summary_statistics": {
+    "xgboost": {
+      "mean_accuracy": 0.8276,
+      "std_accuracy": 0.018299999999999983,
+      "mean_f1_macro": 0.8137594024057687,
+      "std_f1_macro": 0.022596505971592795,
+      "mean_f1_weighted": 0.8241555061524013,
+      "std_f1_weighted": 0.0209422368706233,
+      "mean_auroc": 0.8595439405034164,
+      "std_auroc": 0.0628553397350552,
+      "num_experiments": 2
+    },
+    "deberta": {
+      "mean_accuracy": 0.9657,
+      "std_accuracy": 0.0018000000000000238,
+      "mean_f1_macro": 0.9643473474286997,
+      "std_f1_macro": 0.0016217232313314178,
+      "mean_f1_weighted": 0.9657933799641146,
+      "std_f1_weighted": 0.0017723034729137943,
+      "mean_auroc": 0.9935830359610316,
+      "std_auroc": 0.001240427858431925,
+      "num_experiments": 2
+    },
+    "naive_bayes": {
+      "mean_accuracy": 0.80945,
+      "std_accuracy": 0.02144999999999997,
+      "mean_f1_macro": 0.7750817030262039,
+      "std_f1_macro": 0.03129275441435786,
+      "mean_f1_weighted": 0.7935992881162192,
+      "std_f1_weighted": 0.026268007855216546,
+      "mean_auroc": 0.9406690471816217,
+      "std_auroc": 0.04107768563216946,
+      "num_experiments": 2
+    },
+    "bert": {
+      "mean_accuracy": 0.89255,
+      "std_accuracy": 0.025150000000000006,
+      "mean_f1_macro": 0.8844351094504772,
+      "std_f1_macro": 0.028847462260963797,
+      "mean_f1_weighted": 0.8909192141266242,
+      "std_f1_weighted": 0.026195579378790468,
+      "mean_auroc": 0.9586120190220937,
+      "std_auroc": 0.015398110687048605,
+      "num_experiments": 2
+    },
+    "voting_ensemble": {
+      "mean_accuracy": 0.8889,
+      "std_accuracy": 0.014900000000000024,
+      "mean_f1_macro": 0.8766777838596485,
+      "std_f1_macro": 0.018328766989421152,
+      "mean_f1_weighted": 0.8848600629785217,
+      "std_f1_weighted": 0.016095891269829632,
+      "mean_auroc": null,
+      "std_auroc": null,
+      "num_experiments": 2
+    },
+    "stacking_ensemble": {
+      "mean_accuracy": 0.84425,
+      "std_accuracy": 0.0016499999999999848,
+      "mean_f1_macro": 0.8298208436238244,
+      "std_f1_macro": 0.006535064753537101,
+      "mean_f1_weighted": 0.8399112474820427,
+      "std_f1_weighted": 0.005186495540981939,
+      "mean_auroc": null,
+      "std_auroc": null,
+      "num_experiments": 2
+    }
+  },
+  "dataset_balancing": "unbalanced",
+  "datasets_tested": [
+    "daigt_v2",
+    "sunilthite"
+  ],
+  "datasets_trained": [
+    "hc3",
+    "daigt_v2",
+    "sunilthite",
+    "ah_aitd"
+  ],
+  "excluded_classifiers": {},
+  "roc_data_available": true,
+  "features": [
+    "BERT integration",
+    "Enhanced ensemble methods",
+    "Comprehensive logging",
+    "AUROC visualization"
+  ]
+}
