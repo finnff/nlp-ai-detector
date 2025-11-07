@@ -265,6 +265,7 @@ SHAP (SHapley Additive exPlanations) values are calculated and visualized for th
 % Describe your experiment setup, evaluation process and report your project's outcomes, such as classification accuracy or any pertinent evaluation metrics. Include any noteworthy findings that arose from your analysis.
 \subsection{Experiment Setup}
 \label{sec:experiment-setup}
+The complete implementation of this project is available at \cite{githubrepository}.
 
 \subsubsection{Dataset Configuration}
 The combined dataset consisted of 112,848 samples from the datasets described in Section \ref{sec:data} and was balanced per source and per class as described in Section \ref{sec:dataset-balancing}. Table \ref{tab:combined-dataset} shows the contribution of each source to the final combined dataset. The data was split into training (80\%) and test (20\%) sets using stratified sampling with a fixed seed to ensure reproducibility and maintain class balance across splits, giving 90,278 training samples and 22,570 test samples.
@@ -462,48 +463,8 @@ Regarding RQ2, we were unable to demonstrate clear improvements from the ensembl
 \section{Full List of Extracted Features}
 \label{sec:full-list-of-features}
 
-{\footnotesize
-\begin{verbatim}
-average_word_length, 
-word_length_variance, 
-rttr_root_type_token_ratio,
-hapax_legomena_ratio, 
-average_sentence_length,
-sentence_length_variance, 
-average_parse_depth, 
-maximum_parse_depth, 
-parse_depth_variance, 
-comma_ratio, period_ratio, 
-exclamation_mark_ratio, 
-question_mark_ratio, 
-punctuation_per_word, 
-pos_ratio_adj, 
-pos_ratio_adp, 
-pos_ratio_adv, 
-pos_ratio_aux, 
-pos_ratio_conj, 
-pos_ratio_cconj, 
-pos_ratio_det, 
-pos_ratio_intj, 
-pos_ratio_noun, 
-pos_ratio_num, 
-pos_ratio_part, 
-pos_ratio_pron, 
-pos_ratio_propn, 
-pos_ratio_punct, 
-pos_ratio_sconj, 
-pos_ratio_sym, 
-pos_ratio_verb, 
-pos_ratio_x, 
-noun_to_verb_ratio, 
-sentence_length_burstiness, 
-sentence_length_iqr, 
-position_burstiness_diff, 
-long_sentence_ratio, 
-word_length_burstiness, 
-clause_length_burstiness, 
-perplexity
-\end{verbatim}
+{\footnotesize\ttfamily
+average\_word\_length, word\_length\_variance, rttr\_root\_type\_token\_ratio, hapax\_legomena\_ratio, average\_sentence\_length, sentence\_length\_variance, average\_parse\_depth, maximum\_parse\_depth, parse\_depth\_variance, comma\_ratio, period\_ratio, exclamation\_mark\_ratio, question\_mark\_ratio, punctuation\_per\_word, pos\_ratio\_adj, pos\_ratio\_adp, pos\_ratio\_adv, pos\_ratio\_aux, pos\_ratio\_conj, pos\_ratio\_cconj, pos\_ratio\_det, pos\_ratio\_intj, pos\_ratio\_noun, pos\_ratio\_num, pos\_ratio\_part, pos\_ratio\_pron, pos\_ratio\_propn, pos\_ratio\_punct, pos\_ratio\_sconj, pos\_ratio\_sym, pos\_ratio\_verb, pos\_ratio\_x, noun\_to\_verb\_ratio, sentence\_length\_burstiness, sentence\_length\_iqr, position\_burstiness\_diff, long\_sentence\_ratio, word\_length\_burstiness, clause\_length\_burstiness, perplexity
 }
 
 \end{document}
