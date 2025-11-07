@@ -1,6 +1,6 @@
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score, classification_report
+from sklearn.metrics import accuracy_score, classification_report, roc_auc_score
 from linguistic_feature_model_utils import (
     setup_argparser,
     load_config,
@@ -35,6 +35,15 @@ rf_model = RandomForestClassifier(
 rf_model.fit(X_train, y_train)
 
 y_pred_rf, accuracy_rf, f1_macro_rf, f1_weighted_rf = evaluate_model(rf_model, X_test, y_test, f)
+
+
+
+
+
+
+y_pred_proba = rf_model.predict_proba(X_test)[:, 1]
+auroc_score = roc_auc_score(y_test, y_pred_proba)
+dual_print(f"\nAUROC Score: {auroc_score:.4f}", f)
 
 print_feature_importance(
     feature_names,

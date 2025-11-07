@@ -1,5 +1,8 @@
 import pandas as pd
 import xgboost as xgb
+import shap
+import matplotlib.pyplot as plt
+from sklearn.metrics import roc_auc_score
 from linguistic_feature_model_utils import (
     setup_argparser,
     load_config,
@@ -36,6 +39,14 @@ model.fit(X_train, y_train)
 
 y_pred, accuracy, f1_macro, f1_weighted = evaluate_model(model, X_test, y_test, f)
 y_pred_proba = model.predict_proba(X_test)[:, 1]
+
+
+
+
+
+
+auroc_score = roc_auc_score(y_test, y_pred_proba)
+dual_print(f"\nAUROC Score: {auroc_score:.4f}", f)
 
 print_feature_importance(
     feature_names,
