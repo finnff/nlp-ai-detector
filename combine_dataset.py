@@ -448,13 +448,17 @@ print(f"Ai Generated: \033[95m{ai_count}\033[0m ({ai_perc:.2f}%)")
 # CROSS-DATASET EVALUATION FUNCTIONS
 # =============================================================================
 
-def create_training_dataset(exclude_dataset: str, config_path: str = 'dataset_configuration.toml') -> pd.DataFrame:
+def create_training_dataset(exclude_dataset: str, config_path: str = 'dataset_configuration.toml', balance_classes: bool = None,
+                          max_training_samples: int = None, ensure_equal_representation: bool = None) -> pd.DataFrame:
     """
     Create training dataset excluding specified dataset for cross-dataset evaluation.
 
     Args:
         exclude_dataset: Dataset name to exclude from training
         config_path: Path to configuration file
+        balance_classes: Whether to balance classes. If None, uses config setting.
+        max_training_samples: Maximum number of training samples. If None, uses config setting.
+        ensure_equal_representation: Whether to ensure equal representation from each dataset. If None, uses config setting.
 
     Returns:
         Combined training DataFrame with all datasets except exclude_dataset
@@ -469,7 +473,22 @@ def create_training_dataset(exclude_dataset: str, config_path: str = 'dataset_co
     else:
         RANDOM_STATE = 0
 
+    # Load cross-dataset evaluation configuration
+    cross_dataset_config = config.get('cross_dataset_evaluation', {})
+
+    # Set max training samples
+    if max_training_samples is None:
+        max_training_samples = cross_dataset_config.get('max_training_samples', None)
+
+    # Set ensure equal representation
+    if ensure_equal_representation is None:
+        ensure_equal_representation = cross_dataset_config.get('ensure_equal_representation', True)
+
     print(f"Creating training dataset excluding: {exclude_dataset}")
+    if max_training_samples:
+        print(f"Max training samples: {max_training_samples}")
+    if ensure_equal_representation:
+        print(f"Equal representation from each dataset: {ensure_equal_representation}")
 
     # Get source loaders (reuse existing code)
     def load_hc3_dataset():
@@ -490,6 +509,10 @@ def create_training_dataset(exclude_dataset: str, config_path: str = 'dataset_co
             print(f"Error loading HC3 dataset: {e}")
             return pd.DataFrame()
 
+    def load_evobench_individual():
+        """Load EvoBench dataset for training"""
+        return load_evobench_dataset()
+
     source_loaders = {
         'ai_text_detection_pile': lambda: datasets.load_from_disk(pile_path).to_pandas(),
         'hc3': load_hc3_dataset,
@@ -497,15 +520,27 @@ def create_training_dataset(exclude_dataset: str, config_path: str = 'dataset_co
         'daigt_v2': lambda: pd.read_csv(daigt_v2_path),
         'ah_aitd': lambda: pd.read_excel(ah_aitd_path),
         'llm_detect_competition': lambda: pd.read_csv(kaggle_comp_path),
+        'evobench': load_evobench_individual,
     }
 
-    # Get enabled sources, excluding the specified dataset
+    # Get enabled sources, excluding the specified dataset but always including HC3 and EvoBench
+    always_include = cross_dataset_config.get('always_include_training', ['hc3', 'evobench'])
+
+    # Start with always-included datasets if they are enabled
     enabled_sources = [
-        key for key in source_loaders
+        key for key in always_include
         if config.get(key, {}).get('enabled', False) and key != exclude_dataset
     ]
 
+    # Add other enabled datasets (excluding the test dataset and already included ones)
+    for key in source_loaders:
+        if (config.get(key, {}).get('enabled', False) and
+            key != exclude_dataset and
+            key not in enabled_sources):
+            enabled_sources.append(key)
+
     print(f"Training datasets: {enabled_sources}")
+    print(f"Always included: {[k for k in always_include if k in enabled_sources]}")
 
     if not enabled_sources:
         print(f"⚠️  No datasets enabled after excluding {exclude_dataset}")
@@ -580,23 +615,55 @@ def create_training_dataset(exclude_dataset: str, config_path: str = 'dataset_co
         source_dfs['llm_detect_competition']['generated'] = source_dfs['llm_detect_competition']['generated'].apply(lambda x: 1 if x == 1 else 0)
         source_dfs['llm_detect_competition'] = standardize_dataset(source_dfs['llm_detect_competition'], 'llm_detect_competition')
 
-    # Combine all training datasets
-    sampled_dfs = []
-    total_samples = sum(len(df) for df in source_dfs.values())
+    # evobench
+    if 'evobench' in source_dfs:
+        # EvoBench already has 'generated' column (all 1s) and 'text' column
+        # Just need to standardize it
+        source_dfs['evobench'] = standardize_dataset(source_dfs['evobench'], 'evobench')
 
-    for key, df in source_dfs.items():
-        # For training, use all available data from each dataset
-        sampled = df.copy()
-        sampled['origin_source'] = key
-        sampled_dfs.append(sampled)
+    # Combine all training datasets with equal representation
+    sampled_dfs = []
+    enabled_sources = list(source_dfs.keys())
+
+    if ensure_equal_representation and max_training_samples:
+        # Calculate equal allocation per dataset
+        samples_per_dataset = max_training_samples // len(enabled_sources)
+        print(f"Equal representation: {samples_per_dataset} samples per dataset")
+
+        for key, df in source_dfs.items():
+            print(f"Processing {key}: {len(df)} available samples")
+
+            if len(df) <= samples_per_dataset:
+                # Use all samples if smaller than allocation
+                sampled = df.copy()
+                print(f"  Using all {len(sampled)} samples (smaller than allocation)")
+            else:
+                # Sample equally maintaining unbalanced distribution
+                sampled = df.sample(n=samples_per_dataset, random_state=RANDOM_STATE)
+                print(f"  Sampled {len(sampled)} samples")
+
+            sampled['origin_source'] = key
+            sampled_dfs.append(sampled)
+    else:
+        # Original behavior: use all available data
+        for key, df in source_dfs.items():
+            sampled = df.copy()
+            sampled['origin_source'] = key
+            sampled_dfs.append(sampled)
 
     # Combine and shuffle
     if sampled_dfs:
         df = pd.concat(sampled_dfs, ignore_index=True)
         df = df.sample(frac=1, random_state=RANDOM_STATE).reset_index(drop=True)
 
+        # Apply final sampling limit if specified
+        if max_training_samples and len(df) > max_training_samples:
+            print(f"Final sampling: limiting from {len(df)} to {max_training_samples} samples")
+            df = df.sample(n=max_training_samples, random_state=RANDOM_STATE).reset_index(drop=True)
+
         # Apply class balancing if specified
-        if config.get('balance_classes', False):
+        should_balance = balance_classes if balance_classes is not None else config.get('balance_classes', False)
+        if should_balance:
             df = balance_dataset_classes(df, RANDOM_STATE)
 
         # Drop origin_source for training (not needed for model)
@@ -614,17 +681,33 @@ def create_training_dataset(exclude_dataset: str, config_path: str = 'dataset_co
         return pd.DataFrame()
 
 
-def load_individual_dataset(dataset_name: str) -> pd.DataFrame:
+def load_individual_dataset(dataset_name: str, config_path: str = 'dataset_configuration.toml', max_test_samples: int = None) -> pd.DataFrame:
     """
     Load a single dataset for testing in cross-dataset evaluation.
 
     Args:
         dataset_name: Name of the dataset to load
+        config_path: Path to configuration file
+        max_test_samples: Maximum number of test samples. If None, uses config setting.
 
     Returns:
         DataFrame with the loaded dataset, standardized format
     """
     print(f"Loading individual dataset: {dataset_name}")
+
+    # Load configuration for test sample limits
+    with open(config_path, 'rb') as f:
+        config = tomllib.load(f)
+
+    # Load cross-dataset evaluation configuration
+    cross_dataset_config = config.get('cross_dataset_evaluation', {})
+
+    # Set max test samples
+    if max_test_samples is None:
+        max_test_samples = cross_dataset_config.get('max_test_samples', None)
+
+    if max_test_samples:
+        print(f"Max test samples: {max_test_samples}")
 
     # Define source loaders
     def load_hc3_dataset():
@@ -645,6 +728,15 @@ def load_individual_dataset(dataset_name: str) -> pd.DataFrame:
             print(f"Error loading HC3 dataset: {e}")
             return pd.DataFrame()
 
+    # Load configuration for EvoBench
+    config_path = os.path.join(os.path.dirname(__file__), 'dataset_configuration.toml')
+    with open(config_path, 'rb') as f:
+        config = tomllib.load(f)
+
+    def load_evobench_individual():
+        """Load EvoBench dataset for individual dataset testing"""
+        return load_evobench_dataset()
+
     source_loaders = {
         'hc3': load_hc3_dataset,
         'sunilthite': lambda: pd.read_csv(sunilthite_path),
@@ -652,6 +744,7 @@ def load_individual_dataset(dataset_name: str) -> pd.DataFrame:
         'ah_aitd': lambda: pd.read_excel(ah_aitd_path),
         'ai_text_detection_pile': lambda: datasets.load_from_disk(pile_path).to_pandas(),
         'llm_detect_competition': lambda: pd.read_csv(kaggle_comp_path),
+        'evobench': load_evobench_individual,
     }
 
     if dataset_name not in source_loaders:
@@ -714,6 +807,12 @@ def load_individual_dataset(dataset_name: str) -> pd.DataFrame:
 
         print(f"   ✅ Standardized {dataset_name}: {df.shape}")
         print(f"   Columns: {list(df.columns)}")
+
+        # Apply test sampling limit if specified
+        if max_test_samples and len(df) > max_test_samples:
+            print(f"   Test sampling: limiting from {len(df)} to {max_test_samples} samples")
+            df = df.sample(n=max_test_samples, random_state=0).reset_index(drop=True)
+            print(f"   ✅ Sampled {dataset_name}: {df.shape}")
 
         # Show class distribution
         human_count = len(df[df['generated'] == 0])

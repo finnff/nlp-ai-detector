@@ -85,3 +85,14 @@ model_families = [
 # Domains to include from EvoBench dataset
 domains_to_include = ['xsum', 'writing', 'pubmed', 'peerread', 'harmful']
 relative_portion = 0
+
+# Cross-dataset evaluation configuration
+[cross_dataset_evaluation]
+# Maximum number of samples for training datasets (per experiment)
+max_training_samples = 40000
+# Maximum number of samples for test datasets (per experiment)
+max_test_samples = 10000
+# Whether to ensure equal representation from each training dataset
+ensure_equal_representation = true
+# Always include these datasets in training (never excluded)
+always_include_training = ['hc3', 'evobench']

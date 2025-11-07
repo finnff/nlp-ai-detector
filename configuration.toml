@@ -3,7 +3,7 @@ Title = "Ai-detector Configuration"
 
 # Number of samples to use from the combined dataset
 # if 0, all samples will be used
-num_samples = 10000
+num_samples = 0
 
 # Random state for shuffling and splitting
 random_state = 42
@@ -43,15 +43,15 @@ cv_folds = 5
 enabled = true
 allow_voting = true
 # Set to true to load a pretrained model instead of training from scratch
-use_pretrained = true
+use_pretrained = false
 # Path to the saved model file (used when use_pretrained = true)
-model_path = "models/bert_classifier_172402.pt"
+model_path = "models/bert_classifier_131kUnbal.pt"
 # Set to true to automatically save the model after training
 save_after_training = true
 
 
 [ensemble]
-method = ["voting","stacking"]
+method = ["voting"]
 # estimator to use for the meta classifier ("LogisticRegression", "RandomForest", "XGBoost")
 stacking_estimator = "XGBoost"
 show_progress = true
@@ -69,9 +69,9 @@ allow_voting = true
 # Set to true to load a pretrained model instead of training from scratch
 use_pretrained = true
 # Path to the saved model file (used when use_pretrained = true)
-model_path = "models/deberta_classifier_172402.pt"
+model_path = "models/deberta_classifier_131kUnbal.pt"
 # Set to true to automatically save the model after training
-save_after_training = false
+save_after_training = true
 
 [features.deberta_classifier.params]
 model_name = "microsoft/deberta-v3-base"
