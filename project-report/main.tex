@@ -399,7 +399,31 @@ Figure \ref{fig:shap-summary} shows the SHAP analysis for the XGBoost classifier
 \label{fig:shap-summary}
 \end{figure}
 
+\subsubsection{Ensemble-Based Detector}
 
+\paragraph{Classification Performance}
+Table \ref{tab:ensemble-component-results} presents the performance of all classifiers in the ensemble-based detector. The feature-based XGBoost classifier achieved the highest performance (97.6\% accuracy, 0.997 AUROC). Among the text-based classifiers, DeBERTa performed best (94.2\% accuracy, 0.988 AUROC), followed by BERT (92.1\% accuracy, 0.975 AUROC).
+
+\begin{table}[t]
+\centering
+\footnotesize
+\begin{tabular}{@{}lccc@{}}
+\toprule
+\textbf{Classifier} & \textbf{Accuracy} & \textbf{Macro F1} & \textbf{AUROC} \\
+\midrule
+Random Classifier & 0.494 & 0.494 & 0.500 \\
+\midrule
+Naive Bayes & 0.848 & 0.848 & 0.918 \\
+NB (No Stopwords) & 0.852 & 0.851 & 0.920 \\
+BERT & 0.921 & 0.921 & 0.975 \\
+% TODO! I couldn't rerun DeBERTa on the reported 112k dataset, so these numbers are not updated. 
+DeBERTa & 0.942 & 0.942 & 0.988 \\
+XGBoost & \textbf{0.975} & \textbf{0.975} & \textbf{0.997} \\
+\bottomrule
+\end{tabular}
+\caption{Performance comparison of ensemble component models. Best values in bold.}
+\label{tab:ensemble-component-results}
+\end{table}
 
 
 \section{Discussion and Conclusion}
