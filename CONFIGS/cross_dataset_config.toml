@@ -1,0 +1,93 @@
+# Cross-Dataset Evaluation Configuration
+# This configuration is specifically for leave-one-dataset-out evaluation
+
+Title = "Cross-Dataset Evaluation Configuration for XGBoost Classifier"
+
+# Cross-dataset evaluation settings
+[cross_dataset_evaluation]
+# Model to evaluate
+model_type = "xgboost_classifier"
+
+# XGBoost hyperparameters (same as main training for consistency)
+n_estimators = 100
+max_depth = 6
+learning_rate = 0.1
+random_state = 42
+
+# Feature extraction settings
+extract_features = true
+scale_features = true
+feature_extraction_batch_size = 1000
+
+# Output settings
+output_directory = "results"
+save_models = false  # Set to true if you want to save individual models
+create_roc_curves = true
+
+# Datasets to include in cross-dataset evaluation
+# These will be used in leave-one-dataset-out fashion
+datasets_to_test = [
+    'hc3',
+    'daigt_v2',
+    'sunilthite',
+    'ah_aitd'
+]
+
+# Temporary file settings
+[temp_files]
+# Directory for temporary feature files
+temp_directory = "temp_cross_dataset"
+# Clean up temporary files after evaluation (recommended: true)
+cleanup_after_evaluation = true
+
+# Dataset-specific settings inherit from main dataset_configuration.toml
+# These can be overridden here if needed for cross-dataset evaluation
+
+# Individual dataset configurations for fine-tuning
+[hc3_settings]
+# Optional: Dataset-specific processing settings
+sources_to_include = [
+    'reddit_eli5',
+    'open_qa',
+    'wiki_csai',
+    'finance',
+    'medicine',
+]
+# Maximum samples to use from HC3 (set to 0 for all available)
+max_samples = 0
+
+[daigt_v2_settings]
+# Maximum samples to use from DAIGT v2 (set to 0 for all available)
+max_samples = 0
+
+[sunilthite_settings]
+# Maximum samples to use from Sunil Thite (set to 0 for all available)
+max_samples = 0
+
+[ah_aitd_settings]
+# Maximum samples to use from AH&AITD (set to 0 for all available)
+max_samples = 0
+
+# Feature extraction settings
+[feature_extraction]
+# Linguistic features to extract (same as main pipeline)
+extract_readability = true
+extract_syntactic = true
+extract_lexical = true
+extract_semantic = true
+extract_statistical = true
+
+# Evaluation settings
+[evaluation]
+# Metrics to calculate
+calculate_accuracy = true
+calculate_f1_macro = true
+calculate_f1_weighted = true
+calculate_auroc = true
+generate_classification_report = true
+
+# Cross-validation settings (for potential future extensions)
+[cross_validation]
+# Currently not implemented, but reserved for future k-fold cross-dataset validation
+folds = 1
+stratify_by_dataset = false

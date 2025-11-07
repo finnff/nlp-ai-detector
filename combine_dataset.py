@@ -338,3 +338,325 @@ human_perc = (human_count / total) * 100
 ai_perc = (ai_count / total) * 100
 print(f"Human Written: \033[96m{human_count}\033[0m ({human_perc:.2f}%)")
 print(f"Ai Generated: \033[95m{ai_count}\033[0m ({ai_perc:.2f}%)")
+
+
+# =============================================================================
+# CROSS-DATASET EVALUATION FUNCTIONS
+# =============================================================================
+
+def create_training_dataset(exclude_dataset: str, config_path: str = 'dataset_configuration.toml') -> pd.DataFrame:
+    """
+    Create training dataset excluding specified dataset for cross-dataset evaluation.
+
+    Args:
+        exclude_dataset: Dataset name to exclude from training
+        config_path: Path to configuration file
+
+    Returns:
+        Combined training DataFrame with all datasets except exclude_dataset
+    """
+    # Load configuration
+    with open(config_path, 'rb') as f:
+        config = tomllib.load(f)
+
+    # Set random state
+    if config.get('random', False):
+        RANDOM_STATE = np.random.randint(1, 101)
+    else:
+        RANDOM_STATE = 0
+
+    print(f"Creating training dataset excluding: {exclude_dataset}")
+
+    # Get source loaders (reuse existing code)
+    def load_hc3_dataset():
+        """Load HC3 dataset properly handling DatasetDict structure"""
+        try:
+            dataset_dict = datasets.load_from_disk(hc3_path)
+            # Try to get the train split, or use the first available split
+            if 'train' in dataset_dict:
+                return dataset_dict['train'].to_pandas()
+            elif isinstance(dataset_dict, datasets.DatasetDict):
+                # Use the first available split
+                first_split = list(dataset_dict.keys())[0]
+                return dataset_dict[first_split].to_pandas()
+            else:
+                # It's already a Dataset
+                return dataset_dict.to_pandas()
+        except Exception as e:
+            print(f"Error loading HC3 dataset: {e}")
+            return pd.DataFrame()
+
+    source_loaders = {
+        'ai_text_detection_pile': lambda: datasets.load_from_disk(pile_path).to_pandas(),
+        'hc3': load_hc3_dataset,
+        'sunilthite': lambda: pd.read_csv(sunilthite_path),
+        'daigt_v2': lambda: pd.read_csv(daigt_v2_path),
+        'ah_aitd': lambda: pd.read_excel(ah_aitd_path),
+        'llm_detect_competition': lambda: pd.read_csv(kaggle_comp_path),
+    }
+
+    # Get enabled sources, excluding the specified dataset
+    enabled_sources = [
+        key for key in source_loaders
+        if config.get(key, {}).get('enabled', False) and key != exclude_dataset
+    ]
+
+    print(f"Training datasets: {enabled_sources}")
+
+    if not enabled_sources:
+        print(f"⚠️  No datasets enabled after excluding {exclude_dataset}")
+        return pd.DataFrame()
+
+    # Load and process enabled datasets
+    source_dfs = {}
+    for key in enabled_sources:
+        print(f"Loading {key}...")
+        try:
+            source_dfs[key] = source_loaders[key]()
+        except Exception as e:
+            print(f"⚠️  Could not load {key}: {e}")
+            continue
+
+    # Standardize datasets (reuse existing logic)
+    # AI Text Detection Pile
+    if 'ai_text_detection_pile' in source_dfs:
+        source_dfs['ai_text_detection_pile']['generated'] = source_dfs['ai_text_detection_pile']['source'].apply(lambda x: 0 if x == 'human' else 1)
+        source_dfs['ai_text_detection_pile'] = standardize_dataset(source_dfs['ai_text_detection_pile'], 'ai_text_detection_pile')
+
+    # HC3
+    if 'hc3' in source_dfs:
+        df = source_dfs['hc3']
+        if 'text' in df.columns and 'generated' in df.columns and 'human_answers' not in df.columns:
+            print("   HC3 dataset already flattened, using as-is")
+            source_dfs['hc3'] = standardize_dataset(df, 'hc3')
+        else:
+            print("   HC3 dataset needs flattening")
+            sources_to_include = config['hc3']['sources_to_include']
+            df = df[df['source'].isin(sources_to_include)]
+            rows = []
+            for _, row in df.iterrows():
+                for ans in row['human_answers']:
+                    if ans:
+                        rows.append({'text': ans, 'generated': 0})
+                for ans in row['chatgpt_answers']:
+                    if ans:
+                        rows.append({'text': ans, 'generated': 1})
+            source_dfs['hc3'] = pd.DataFrame(rows)
+            source_dfs['hc3'] = standardize_dataset(source_dfs['hc3'], 'hc3')
+
+    # sunilthite
+    if 'sunilthite' in source_dfs:
+        source_dfs['sunilthite'] = standardize_dataset(source_dfs['sunilthite'], 'sunilthite')
+
+    # daigt_v2
+    if 'daigt_v2' in source_dfs:
+        # Convert label to generated for daigt_v2
+        if 'label' in source_dfs['daigt_v2'].columns:
+            source_dfs['daigt_v2']['generated'] = source_dfs['daigt_v2']['label']
+            source_dfs['daigt_v2'] = standardize_dataset(source_dfs['daigt_v2'], 'daigt_v2')
+        elif 'generated' not in source_dfs['daigt_v2'].columns:
+            print("⚠️  Could not find label or generated column in daigt_v2 dataset, skipping...")
+            del source_dfs['daigt_v2']
+
+    # ah_aitd
+    if 'ah_aitd' in source_dfs:
+        # Convert label_id to generated (1=AI, 0=Human)
+        if 'label_id' in source_dfs['ah_aitd'].columns:
+            source_dfs['ah_aitd']['generated'] = source_dfs['ah_aitd']['label_id']
+            source_dfs['ah_aitd'] = standardize_dataset(source_dfs['ah_aitd'], 'ah_aitd')
+        elif 'label_name' in source_dfs['ah_aitd'].columns:
+            source_dfs['ah_aitd']['generated'] = source_dfs['ah_aitd']['label_name'].apply(lambda x: 1 if x == 'AI' else 0)
+            source_dfs['ah_aitd'] = standardize_dataset(source_dfs['ah_aitd'], 'ah_aitd')
+        else:
+            print("⚠️  Could not find label column in ah_aitd dataset, skipping...")
+            del source_dfs['ah_aitd']
+
+    # llm_detect_competition
+    if 'llm_detect_competition' in source_dfs:
+        source_dfs['llm_detect_competition']['generated'] = source_dfs['llm_detect_competition']['generated'].apply(lambda x: 1 if x == 1 else 0)
+        source_dfs['llm_detect_competition'] = standardize_dataset(source_dfs['llm_detect_competition'], 'llm_detect_competition')
+
+    # Combine all training datasets
+    sampled_dfs = []
+    total_samples = sum(len(df) for df in source_dfs.values())
+
+    for key, df in source_dfs.items():
+        # For training, use all available data from each dataset
+        sampled = df.copy()
+        sampled['origin_source'] = key
+        sampled_dfs.append(sampled)
+
+    # Combine and shuffle
+    if sampled_dfs:
+        df = pd.concat(sampled_dfs, ignore_index=True)
+        df = df.sample(frac=1, random_state=RANDOM_STATE).reset_index(drop=True)
+
+        # Apply class balancing if specified
+        if config.get('balance_classes', False):
+            df = balance_dataset_classes(df, RANDOM_STATE)
+
+        # Drop origin_source for training (not needed for model)
+        df = df.drop(columns=['origin_source'])
+
+        print(f"✅ Training dataset created: {df.shape}")
+        print(f"   Columns: {list(df.columns)}")
+        if 'perplexity' in df.columns:
+            non_nan_ppl = df['perplexity'].notna().sum()
+            print(f"   🧠 Perplexity available for {non_nan_ppl}/{len(df)} samples ({non_nan_ppl/len(df)*100:.1f}%)")
+
+        return df
+    else:
+        print("⚠️  No data loaded for training dataset")
+        return pd.DataFrame()
+
+
+def load_individual_dataset(dataset_name: str) -> pd.DataFrame:
+    """
+    Load a single dataset for testing in cross-dataset evaluation.
+
+    Args:
+        dataset_name: Name of the dataset to load
+
+    Returns:
+        DataFrame with the loaded dataset, standardized format
+    """
+    print(f"Loading individual dataset: {dataset_name}")
+
+    # Define source loaders
+    def load_hc3_dataset():
+        """Load HC3 dataset properly handling DatasetDict structure"""
+        try:
+            dataset_dict = datasets.load_from_disk(hc3_path)
+            # Try to get the train split, or use the first available split
+            if 'train' in dataset_dict:
+                return dataset_dict['train'].to_pandas()
+            elif isinstance(dataset_dict, datasets.DatasetDict):
+                # Use the first available split
+                first_split = list(dataset_dict.keys())[0]
+                return dataset_dict[first_split].to_pandas()
+            else:
+                # It's already a Dataset
+                return dataset_dict.to_pandas()
+        except Exception as e:
+            print(f"Error loading HC3 dataset: {e}")
+            return pd.DataFrame()
+
+    source_loaders = {
+        'hc3': load_hc3_dataset,
+        'sunilthite': lambda: pd.read_csv(sunilthite_path),
+        'daigt_v2': lambda: pd.read_csv(daigt_v2_path),
+        'ah_aitd': lambda: pd.read_excel(ah_aitd_path),
+        'ai_text_detection_pile': lambda: datasets.load_from_disk(pile_path).to_pandas(),
+        'llm_detect_competition': lambda: pd.read_csv(kaggle_comp_path),
+    }
+
+    if dataset_name not in source_loaders:
+        raise ValueError(f"Unknown dataset: {dataset_name}")
+
+    try:
+        # Load the dataset
+        df = source_loaders[dataset_name]()
+        print(f"   Loaded {len(df)} samples from {dataset_name}")
+
+        # Standardize the dataset
+        if dataset_name == 'hc3':
+            # Handle HC3 flattening
+            if 'text' in df.columns and 'generated' in df.columns and 'human_answers' not in df.columns:
+                print("   HC3 dataset already flattened, using as-is")
+                df = standardize_dataset(df, 'hc3')
+            else:
+                print("   HC3 dataset needs flattening")
+                rows = []
+                for _, row in df.iterrows():
+                    for ans in row['human_answers']:
+                        if ans:
+                            rows.append({'text': ans, 'generated': 0})
+                    for ans in row['chatgpt_answers']:
+                        if ans:
+                            rows.append({'text': ans, 'generated': 1})
+                df = pd.DataFrame(rows)
+                df = standardize_dataset(df, 'hc3')
+
+        elif dataset_name == 'ah_aitd':
+            # Convert label_id to generated (1=AI, 0=Human)
+            if 'label_id' in df.columns:
+                df['generated'] = df['label_id']
+            elif 'label_name' in df.columns:
+                df['generated'] = df['label_name'].apply(lambda x: 1 if x == 'AI' else 0)
+            else:
+                raise ValueError(f"Could not find label column in ah_aitd dataset")
+            df = standardize_dataset(df, 'ah_aitd')
+
+        elif dataset_name == 'ai_text_detection_pile':
+            # Convert source to generated labels
+            df['generated'] = df['source'].apply(lambda x: 0 if x == 'human' else 1)
+            df = standardize_dataset(df, 'ai_text_detection_pile')
+
+        elif dataset_name == 'llm_detect_competition':
+            df['generated'] = df['generated'].apply(lambda x: 1 if x == 1 else 0)
+            df = standardize_dataset(df, 'llm_detect_competition')
+
+        elif dataset_name == 'daigt_v2':
+            # Convert label to generated for daigt_v2
+            if 'label' in df.columns:
+                df['generated'] = df['label']
+                df = standardize_dataset(df, 'daigt_v2')
+            else:
+                print("⚠️  Could not find label column in daigt_v2 dataset")
+                return pd.DataFrame()
+        else:
+            # Standard datasets (sunilthite)
+            df = standardize_dataset(df, dataset_name)
+
+        print(f"   ✅ Standardized {dataset_name}: {df.shape}")
+        print(f"   Columns: {list(df.columns)}")
+
+        # Show class distribution
+        human_count = len(df[df['generated'] == 0])
+        ai_count = len(df[df['generated'] == 1])
+        print(f"   Human: {human_count}, AI: {ai_count}")
+
+        return df
+
+    except Exception as e:
+        print(f"❌ Error loading {dataset_name}: {e}")
+        import traceback
+        traceback.print_exc()
+        return pd.DataFrame()
+
+
+def balance_dataset_classes(df: pd.DataFrame, random_state: int = 0) -> pd.DataFrame:
+    """
+    Balance dataset classes by downsampling the majority class.
+
+    Args:
+        df: Input DataFrame
+        random_state: Random seed for reproducibility
+
+    Returns:
+        Balanced DataFrame
+    """
+    # Separate classes
+    human_df = df[df['generated'] == 0]
+    ai_df = df[df['generated'] == 1]
+
+    min_class_size = min(len(human_df), len(ai_df))
+
+    if len(human_df) != min_class_size:
+        human_df = human_df.sample(n=min_class_size, random_state=random_state)
+        print(f"   Downsampled human class from {len(df[df['generated'] == 0])} to {min_class_size}")
+
+    if len(ai_df) != min_class_size:
+        ai_df = ai_df.sample(n=min_class_size, random_state=random_state)
+        print(f"   Downsampled AI class from {len(df[df['generated'] == 1])} to {min_class_size}")
+
+    balanced_df = pd.concat([human_df, ai_df], ignore_index=True)
+    balanced_df = balanced_df.sample(frac=1, random_state=random_state).reset_index(drop=True)
+
+    print(f"   ✅ Balanced dataset: {balanced_df.shape}")
+    return balanced_df
+
+
+if __name__ == "__main__":
+    # Allow running combine_dataset.py directly for testing
+    pass
