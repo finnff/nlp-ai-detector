@@ -329,7 +329,7 @@ BERT (\texttt{google-bert/bert-base-uncased}) and DeBERTa (\texttt{microsoft/deb
 \paragraph{Perplexity Calculation}
 Perplexity features were computed using the \texttt{EleutherAI/pythia-1.4b} model with a maximum sequence length of 1,536 tokens and a stride of 1,536 to avoid overlapping windows.
 
-\FloatBarrier
+% \FloatBarrier
 \subsection{Results}
 \label{sec:results}
 
@@ -366,6 +366,29 @@ F1 (Weighted) & 0.928 & 0.961 & \textbf{0.975} \\
 \end{table}
 
 \paragraph{Feature Importance Analysis}
+Figures \ref{fig:lr-features}, \ref{fig:rf-features}, and \ref{fig:xgb-features} show the top 10 most important features for each of the three feature-based classifiers. Across all three models, perplexity is the most discriminative feature, with normalized importance scores ranging from 0.334 (XGBoost) to 0.430 (Random Forest). Lexical features, particularly average word length and hapax legomena ratio, consistently rank among the top features. Syntactic features show varying importance across models, with Random FOrest and Logistic Regression having four syntactic features among their top 10, and XGBoost only one, and parse depth variance being the second most important feature for Logistic Regression (0.179) but not appearing at all in the top 10 for XGBoost.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.8\columnwidth]{../plots/logistic_regression_features.png}
+\caption{Top 10 feature importances for Logistic Regression classifier}
+\label{fig:lr-features}
+\end{figure}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.8\columnwidth]{../plots/random_forest_features.png}
+\caption{Top 10 feature importances for Random Forest classifier}
+\label{fig:rf-features}
+\end{figure}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.8\columnwidth]{../plots/xgboost_features.png}
+\caption{Top 10 feature importances for XGBoost classifier}
+\label{fig:xgb-features}
+\end{figure}
+
 
 \paragraph{SHAP Summary Plot}
 Figure \ref{fig:shap-summary} shows the SHAP analysis for the XGBoost classifier. Perplexity is the most discriminative feature, followed by lexical features (hapax legomena ratio, average word length, RTTR). High perplexity values (red) are strongly associated with human-written text, while low perplexity (blue) is strongly associated with AI-generated text. For the lexical features, lower values are associated with human-written text, that is less unique words, shorter words and a smaller range of words is associated with human-written text.
