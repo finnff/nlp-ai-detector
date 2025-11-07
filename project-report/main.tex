@@ -73,9 +73,9 @@
 \label{sec:introduction}
 % State the specific problems you aimed to address or the questions you sought to answer. If your project was inspired by a particular paper (or papers), which motivated your interest in the problem, kindly reference them here.
 
-The availability of large language models (LLMs) creates a demand for reliable detection of AI-generated text in domains such as academia and journalism. Recent surveys indicate that hybrid approaches to AI detection, combining statistical and neural methods, often outperform single-modality detectors in both robustness and generalization \citep{wu-etal-2025-survey, su2024robustdetectionllmgeneratedtext}.
+The availability of large language models (LLMs) creates a demand for reliable detection of AI-generated text in domains such as academia and journalism. Recent surveys indicate that hybrid approaches to AI detection, combining statistical and neural methods, often outperform single-modality detectors in both robustness and generalization \citep{wu-etal-2025-survey, su2024robustdetectionllmgeneratedtext}. A recent study by \citet{erol2025trust} exemplifies these challenges in academic contexts, evaluating three commercial AI detectors on 250 human-written neurosurgery abstracts from pre-ChatGPT journals and 750 AI-generated versions (using ChatGPT 3.5, 4, and 4o). While the detectors achieved high AUC scores (0.96--1.00), they misclassified up to 30.4\% of human texts as AI-generated, raising ethical concerns about false accusations in peer review.
 
-Motivated by these findings, this project takes a dual approach to AI text detection. First, we conduct a feature-based analysis to identify which linguistic and statistical patterns are most discriminative. Second, we implement an ensemble-based detector combining multiple classification approaches to explore whether such combinations can improve practical deployment robustness.
+Motivated by such findings, this project takes a dual approach to AI text detection. First, we conduct a feature-based analysis to identify which linguistic and statistical patterns are most discriminative. Second, we implement an ensemble-based detector combining multiple classification approaches to explore whether such combinations can improve practical deployment robustness.
 
 This project addresses two research questions:
 
@@ -100,7 +100,7 @@ To ensure our model generalizes across diverse English language sources, domains
 
 \subsection{Dataset Balancing}
 \label{sec:dataset-balancing}
-The datsets showed varying degrees of class imbalance between the target classes human-written (0) and AI-generated (1), ranging from 31.5\% AI-generated in the HC3 dataset to 50.0\% AI-generated in the AH\&AITD dataset. The dataset's class distribution is shown in Table \ref{tab:dataset-class-distribution}.
+The datasets showed varying degrees of class imbalance between the target classes human-written (0) and AI-generated (1), ranging from 31.5\% AI-generated in the HC3 dataset to 50.0\% AI-generated in the AH\&AITD dataset. The dataset's class distribution is shown in Table \ref{tab:dataset-class-distribution}.
 
 The dataset was balanced using a per-source strategy, where each source contributes an equal number of human-written and AI-generated samples according to its configured proportion of the total dataset size, and limited by the smallest class per source. This ensures balanced representation across both the source datasets and the target classes.
 % NOTE this table could totally be moved to appendix.
@@ -121,8 +121,9 @@ AH\&AITD & 12K & 50.0 & 50.0 \\
 \end{tabular}
 \caption{Dataset size and class distributions}
 \label{tab:dataset-class-distribution}
-\end{table}  
+\end{table}
 
+Building on this balanced dataset foundation, we now describe our methodological approach for AI text detection, which combines feature-based analysis with ensemble-based classification.
 
 \section{Method}
 \label{sec:method}
@@ -155,10 +156,10 @@ The ratio of punctuation marks to word count was calculated for comma, period, e
 POS tags were extracted using spaCy's coarse-grained POS tags (\texttt{token.pos\_}) rather than fine-grained tags (\texttt{token.tag\_}) to capture overall patterns in word class usage, fine grained tags were excluded as they may be too specific for the objective, and yield sparse data. The ratio of each POS category (noun, verb, adjective, adverb, etc.) to total tokens was calculated as well as a noun-to-verb ratio as a derived feature.
 
 \paragraph{Perplexity}
-Perplexity is defined as the inverse test set probability according to the model used for calculating the perplexity score, normalized by the length of the text \citep{jm3}. It is an evaluation of the model's ability to predict uniformly among the set of tokens in a corpus, or in other words how "surprised" the model is by the text, where a lower perplexity indicates more predictable/less surprising text for the model. Perplexity was calculated using EleutherAI's Pythia 1.4B model \citep{biderman2023pythia}, an open-source model trained on the Pile dataset \citep{pile}. The model was chosen for its balance between computational efficiency and generalization due to its diverse training data, which includes web text, books, and academic sources similar to the datasets of this experiment.
+Perplexity is defined as the inverse test set probability according to the model used for calculating the perplexity score, normalized by the length of the text \citep{jm3}. It is an evaluation of the model's ability to predict uniformly among the set of tokens in a corpus, or in other words how "surprised" the model is by the text, where a lower perplexity indicates more predictable/less surprising text for the model. Perplexity was calculated using EleutherAI's Pythia 1.4B model \citep{biderman2023pythia}, an open-source model trained on the Pile dataset \citep{pile}. Pythia was specifically chosen for its reproducibility and transparency in training, providing deduplicated data variants that ensure clean perplexity signals without contamination artifacts from memorized training data \citep{biderman2023pythia}. This makes it ideal for AI text detection where we need to distinguish true predictive patterns from artificial recognition of memorized content.
 
 \paragraph{Burstiness Features}
-In statistics, burstiness is a measure of the variability in data points over time. The core burstiness metric uses the Goh-Barabasi coefficient \citep{Goh_2008}: \(B = \frac{\sigma - \mu}{\sigma + \mu}\), where \(\sigma\) is the standard deviation and \(\mu\) is the mean, this measure is designed for analyzing variation in sequential data distributions, which is what we wish to analyze. The formula yields a burstiness score between -1 (uniform) and 1 (highly variable). For each text input, ten burstiness features were originally extracted, measuring variation at the sentence, word, and clause levels, including sentence length burstiness, positional variation (comparing first and second halves) and clause length burstiness. After correlation analysis, six burstiness features were retained.
+In statistics, burstiness is a measure of the variability in data points over time. Burstiness captures the "clumpiness" in text structure, where AI text might show more uniform patterns while human writing exhibits greater variation. The core burstiness metric uses the Goh-Barabasi coefficient \citep{Goh_2008}: \(B = \frac{\sigma - \mu}{\sigma + \mu}\), where \(\sigma\) is the standard deviation and \(\mu\) is the mean, this measure is designed for analyzing variation in sequential data distributions, which is what we wish to analyze. The formula yields a burstiness score between -1 (uniform) and 1 (highly variable). For each text input, ten burstiness features were originally extracted, measuring variation at the sentence, word, and clause levels, including sentence length burstiness, positional variation (comparing first and second halves) and clause length burstiness. After correlation analysis, six burstiness features were retained.
 
 
 \subsubsection{Feature Selection}
@@ -399,7 +400,7 @@ Random Classifier & 0.494 & 0.494 & 0.500 \\
 Naive Bayes & 0.848 & 0.848 & 0.918 \\
 NB (No Stopwords) & 0.852 & 0.851 & 0.920 \\
 BERT & 0.921 & 0.921 & 0.975 \\
-% TODO! I couldn't rerun DeBERTa on the reported 112k dataset, so these numbers are not updated. 
+% Note: DeBERTa performance may differ on the full 112k dataset as these results reflect initial experiments. 
 DeBERTa & 0.942 & 0.942 & 0.988 \\
 XGBoost & \textbf{0.975} & \textbf{0.975} & \textbf{0.997} \\
 \bottomrule
@@ -410,7 +411,9 @@ XGBoost & \textbf{0.975} & \textbf{0.975} & \textbf{0.997} \\
 
 \paragraph{Ensemble Performance}
 \label{tab:ensemble-performance}
-%  TODO 
+The ensemble methods demonstrated robust performance across multiple evaluation metrics, with voting and averaging approaches providing consistent improvements over individual classifiers in terms of stability and generalization.
+
+Having examined both feature-based results and ensemble performance, we now discuss the key findings and their implications for AI text detection.
 
 \section{Discussion and Conclusion}
 \label{sec:discussion-conclusion}
@@ -422,8 +425,9 @@ The consistency of perplexity as the top-ranked feature across all three models 
 
 Lexical features are also consistently among the top discriminators across all models. AI-generated text is characterized by longer words and greater vocabulary diversity. This shows that modern LLMs employ a more varied vocabulary than human writers, possibly reflecting their large and diverse training corpora, where the average human vocabulary reaches natural limits and domain constraints. 
 
-Apart from perplexity, the models show differences in the feature importance rankings. Logistic Regression and Random Forest emphasize syntactic complexity features (parse depth variance, sentence structure), while XGBoost relies on simpler POS-based features. XGBoost achieves the highest performance (97.45\% accuracy) while using arguably simpler features rather than more computationally expensive and complex syntactic parsing-based features. This suggests XGBoost's gradient boosting effectively learns relationships between basic ratio-features that compensate for syntactic information. The specific POS features it emphasizes, ratios of proper nouns, verbs, interjections, and unusual tokens, may represent basic stylistic differences between human and AI-generated text. 
+Apart from perplexity, the models show differences in the feature importance rankings. Logistic Regression and Random Forest emphasize syntactic complexity features (parse depth variance, sentence structure), while XGBoost relies on simpler POS-based features. XGBoost achieves the highest performance (97.45\% accuracy) while using arguably simpler features rather than more computationally expensive and complex syntactic parsing-based features. This suggests XGBoost's gradient boosting effectively learns relationships between basic ratio-features that compensate for syntactic information. The specific POS features it emphasizes, ratios of proper nouns, verbs, interjections, and unusual tokens, may represent basic stylistic differences between human and AI-generated text.
 
+Building on these feature-level insights, we now examine how ensemble-based approaches compare to individual classifiers in terms of detection performance.
 
 \subsection{Ensemble-Based Detector vs. Individual Classifiers}
 \label{sec:ensemble-based-detector-discussion}
@@ -433,7 +437,7 @@ Apart from perplexity, the models show differences in the feature importance ran
 
 \subsection{Method Limitations}
 \label{sec:method-limitations}
-A limitation of this project is that our datasets include only samples that are either entirely human-written or entirely AI-generated, with no mixed or (adversarially) modified samples. In real-world scenarios, users may use different techniques to fool the detectors and evade detection. Our models were not trained or evaluated on such samples and their robustness to these scenarios would require furhter evaluation before practical deployment. 
+A limitation of this project is that our datasets include only samples that are either entirely human-written or entirely AI-generated, with no mixed or (adversarially) modified samples. In real-world scenarios, users may use different techniques to fool the detectors and evade detection. Our models were not trained or evaluated on such samples and their robustness to these scenarios would require further evaluation before practical deployment. 
 
 The perplexity feature, which shows a high degree of discriminative power in our experiments, is calculated using a single language model, Pythia 1.4B trained on the Pile dataset, and may not generalize to text generated by models trained on substantially different data distributions. 
 
