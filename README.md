@@ -1,5 +1,9 @@
 # Hybrid Feature-Based Detection of AI-Generated Text
 
+**The accompanying paper can be read here:** [project-report/NLP-AI-Detection-2025-final.pdf](project-report/NLP-AI-Detection-2025-final.pdf)
+
+---
+
 This repository implements a project exploring linguistic and statistical features for distinguishing human- vs. AI-generated text. We evaluate individual features (e.g., sentence complexity, punctuation, lexical diversity, perplexity, burstiness) and hybrid combinations/ensembles using lightweight classifiers like logistic regression and XGBoost. Hybrids often outperform single methods in robustness and generalization, as per recent surveys (Wu et al., 2025; Su & Wu, 2024).
 
 ## Research Question
